@@ -1,7 +1,62 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = []
+
+[tool.setuptools.package-data]
+"*" = []
+
+
 [project]
-name = "14-data-challenge-se"
+name = "14-data-challenge"
 version = "0.1.0"
-description = "Add your description here"
+authors = [
+    # Complete with your information
+    { name = "Augustin Naton", email = "augustin.naton@gmail.com" },
+]
+description = "XHEC Data Science and AI for Business Data Challenge Project"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+
+
+dependencies = [
+    "pandas>=2.3.3",
+]
+
+[tool.uv]
+default-groups = ["dev"]
+
+[dependency-groups]
+dev = [
+    "nbstripout>=0.8.1",
+    "pre-commit>=4.3.0",
+    "ruff>=0.14.1",
+    "ipykernel>=7.0.1"
+]
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "D",   # pydocstyle (docstring conventions)
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+]
+ignore = [
+    "D100", # Missing docstring in public module
+    "D104", # Missing docstring in public package
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.isort]
+known-first-party = ["14-data-challenge"]
+force-sort-within-sections = true
