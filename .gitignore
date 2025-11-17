@@ -1,5 +1,7 @@
-# Data directories
-data/
+# Data directories (ignore contents but keep structure)
+data/*
+!data/.gitkeep
+
 archive/
 
 # Notebooks

@@ -7,7 +7,6 @@ data-challenge/
     ├── .github/
     │   └── workflows/          # GitHub Actions CI/CD workflows
     ├── data/                   # Data directory (gitignored)
-    ├── archive/                # Archive directory (gitignored)
     ├── notebooks/              # Jupyter notebooks for analysis
     ├── src/                    # Source code for the project
     ├── pyproject.toml          # Project dependencies and configuration
