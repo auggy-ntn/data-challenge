@@ -1,0 +1,6 @@
+# Data directories
+data/
+archive/
+
+# Notebooks
+notebooks/use_case_presentation.ipynb
