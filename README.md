@@ -51,6 +51,8 @@ dvc pull
 data-challenge/
 ├── .github/
 │   └── workflows/          # GitHub Actions CI/CD workflows
+├── config/                 # Configuration management
+│   ├── paths.py           # Centralized path definitions
 ├── data/                   # Data directory (DVC-tracked, not in Git)
 │   ├── raw/               # Immutable raw data
 │   ├── intermediate/      # Cleaned, processed data
@@ -60,6 +62,7 @@ data-challenge/
 │   ├── DVC_WORKFLOW.md    # Data versioning workflow
 │   └── MLFLOW_WORKFLOW.md # Experiment tracking workflow
 ├── notebooks/              # Jupyter notebooks for analysis
+│   └── eda/               # Exploratory Data Analysis notebooks
 ├── src/
 │   └── data_pipelines/    # Data transformation scripts (team populates this)
 ├── dvc.yaml               # DVC pipeline definition
