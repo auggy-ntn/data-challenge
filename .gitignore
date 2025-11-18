@@ -1,5 +1,8 @@
 # Data directories (ignore contents but keep structure)
-data/*
+# Allow DVC files to be tracked in Git
+/data/*
+!/data/*.dvc
+!/data/.gitignore
 !data/.gitkeep
 
 archive/
@@ -84,10 +87,6 @@ venv/*
 # Jupyter NB Checkpoints
 .ipynb_checkpoints/
 
-# exclude data from source control by default
-/data/
-/models/
-
 # Mac OS-specific storage files
 .DS_Store
 
@@ -100,3 +99,6 @@ venv/*
 
 #MLFlow
 mlruns/
+
+# Owner specific files
+docs/OWNER_CHECKLIST.md
