@@ -1,0 +1,27 @@
+# DVC Pipeline Configuration
+# Define your data processing stages here
+# Each stage runs a command and tracks dependencies and outputs
+
+# Example pipeline structure (customize for your project):
+
+# stages:
+#   # Stage 1: Data cleaning
+#   clean_data:
+#     cmd: python src/data_pipelines/clean_data.py data/raw/input.csv data/intermediate/cleaned.csv
+#     deps:
+#       - src/data_pipelines/clean_data.py
+#       - data/raw/input.csv
+#     outs:
+#       - data/intermediate/cleaned.csv
+#
+#   # Stage 2: Feature engineering
+#   create_features:
+#     cmd: python src/data_pipelines/feature_engineering.py data/intermediate/cleaned.csv data/processed/features.csv
+#     deps:
+#       - src/data_pipelines/feature_engineering.py
+#       - data/intermediate/cleaned.csv
+#     outs:
+#       - data/processed/features.csv
+
+# To run the pipeline: dvc repro
+# To visualize: dvc dag

@@ -1,0 +1,49 @@
+# Data Pipelines
+
+This directory contains data transformation scripts that process data through the medallion architecture stages:
+
+## Structure
+
+```
+data_pipelines/
+├── bronze_*.py      # Scripts to load and validate raw data
+├── silver_*.py      # Scripts to clean and transform data
+└── gold_*.py        # Scripts to create ML-ready features
+```
+
+## Usage
+
+Create pipeline scripts here and reference them in `dvc.yaml`. For example:
+
+```python
+# src/data_pipelines/clean_electricity.py
+import pandas as pd
+
+def main():
+    # Read raw data
+    df = pd.read_csv('data/raw/electricity_price/data.csv')
+
+    # Clean and transform
+    df_clean = df.dropna()
+
+    # Save processed data
+    df_clean.to_csv('data/processed/electricity_clean.csv', index=False)
+
+if __name__ == '__main__':
+    main()
+```
+
+Then add to `dvc.yaml`:
+
+```yaml
+stages:
+  clean_electricity:
+    cmd: python src/data_pipelines/clean_electricity.py
+    deps:
+      - src/data_pipelines/clean_electricity.py
+      - data/raw/electricity_price/
+    outs:
+      - data/processed/electricity_clean.csv
+```
+
+See `docs/DVC_WORKFLOW.md` for more details on creating data pipelines.
