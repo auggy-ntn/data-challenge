@@ -28,6 +28,12 @@ git clone https://github.com/auggy-ntn/data-challenge.git
 cd data-challenge
 uv sync
 
+# Make sure the project venv is activated
+source .venv/bin/activate
+
+# Install pre-commit hooks
+pre-commit install
+
 # Get credentials from project owner, add to .env
 cp .env.example .env
 # Edit .env with provided credentials
@@ -131,36 +137,6 @@ See detailed guides:
 
 ---
 
-## For Project Owner
-
-### Sharing Credentials
-
-**Backblaze B2:**
-- Share `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` securely
-- Team members add to their `.env` file
-
-**Databricks:**
-- Invite team members to workspace via email
-- Share `DATABRICKS_HOST` and `MLFLOW_EXPERIMENT_ID`
-- Team members create their own `DATABRICKS_TOKEN`
-
-### Managing Data
-
-```bash
-# Track new raw data
-dvc add data/raw/
-
-# Push to B2
-dvc push
-
-# Commit metadata
-git add data/raw.dvc
-git commit -m "Add raw data"
-git push
-```
-
----
-
 ## Development
 
    Edit `.env` and add your Backblaze B2 credentials:
@@ -184,21 +160,6 @@ git push
    This will download all project data to your local machine.
 
 ### Development Workflow
-
-#### Running Pre-commit Hooks Manually
-
-Test all hooks before committing:
-
-```bash
-# Run on all files
-uv run pre-commit run --all-files
-
-# Run on staged files only
-uv run pre-commit run
-
-# Run a specific hook
-uv run pre-commit run ruff-format --all-files
-```
 
 #### Code Quality Tools
 
