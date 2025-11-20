@@ -1,0 +1,18 @@
+schema: '2.0'
+stages:
+  raw_to_intermediate:
+    cmd: uv run python3 src/data_pipelines/raw_to_intermediate.py
+    deps:
+    - path: data/raw/pc_price/pc_price_eu.csv
+      hash: md5
+      md5: edc3a7f9d1c6c0a2c057a03332cad020
+      size: 73034
+    - path: src/data_pipelines/raw_to_intermediate.py
+      hash: md5
+      md5: c702cb11d8c1aec75c0adcb6c24c9de7
+      size: 6331
+    outs:
+    - path: data/intermediate/pc_price/intermediate_pc_price_eu.csv
+      hash: md5
+      md5: 6c3be3c61194e57e1460b705a3a74b77
+      size: 21629

@@ -15,13 +15,16 @@ INTERMEDIATE_DATA_DIR = DATA_DIR / "intermediate"
 PROCESSED_DATA_DIR = DATA_DIR / "processed"
 
 # Raw data subdirectories
-AUTOMOBILE_INDUSTRY_DIR = RAW_DATA_DIR / "automobile_industry"
-ELECTRICITY_PRICE_DIR = RAW_DATA_DIR / "electricity_price"
-EXAMPLE_PRODUCT_DIR = RAW_DATA_DIR / "example_product"
-PC_PRICE_DIR = RAW_DATA_DIR / "pc_price"
-PHENOL_ACETONE_DIR = RAW_DATA_DIR / "phenol_acetone_capacity_loss"
-PITCHBOOKS_DIR = RAW_DATA_DIR / "pitchbooks_company_financials"
-SHUTDOWN_DIR = RAW_DATA_DIR / "shutdown"
+RAW_AUTOMOBILE_INDUSTRY_DIR = RAW_DATA_DIR / "automobile_industry"
+RAW_ELECTRICITY_PRICE_DIR = RAW_DATA_DIR / "electricity_price"
+RAW_EXAMPLE_PRODUCT_DIR = RAW_DATA_DIR / "example_product"
+RAW_PC_PRICE_DIR = RAW_DATA_DIR / "pc_price"
+RAW_PHENOL_ACETONE_DIR = RAW_DATA_DIR / "phenol_acetone_capacity_loss"
+RAW_PITCHBOOKS_DIR = RAW_DATA_DIR / "pitchbooks_company_financials"
+RAW_SHUTDOWN_DIR = RAW_DATA_DIR / "shutdown"
+
+# Intermediate data subdirectories
+INTERMEDIATE_PC_PRICE_DIR = INTERMEDIATE_DATA_DIR / "pc_price"
 
 # Notebooks directory
 NOTEBOOKS_DIR = PROJECT_ROOT / "notebooks"
