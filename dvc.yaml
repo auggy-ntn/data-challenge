@@ -5,7 +5,6 @@
 # To run the pipeline: dvc repro
 # To visualize: dvc dag
 
-
 stages:
   # Stage 1: Convert raw data to intermediate format
   raw_to_intermediate:
@@ -13,5 +12,9 @@ stages:
     deps:
       - src/data_pipelines/raw_to_intermediate.py
       - data/raw/pc_price/pc_price_eu.csv
+      - data/raw/pc_price/pc_price_asia.csv
+      - data/raw/DEXCHUS.csv
+      - data/raw/DEXINUS.csv
     outs:
       - data/intermediate/pc_price/intermediate_pc_price_eu.csv
+      - data/intermediate/pc_price/intermediate_pc_price_asia.csv
