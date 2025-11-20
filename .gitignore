@@ -106,3 +106,5 @@ mlruns/
 
 # Owner specific files
 docs/OWNER_CHECKLIST.md
+.claude
+CLAUDE.md
