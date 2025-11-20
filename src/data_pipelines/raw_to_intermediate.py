@@ -11,8 +11,39 @@ from src.utils.data_preprocessing import (
     clean_column_names,
     compute_best_price_asia,
     convert_pc_asia_prices,
+    extract_bpa_capacity_loss,
 )
 from src.utils.logger import logger
+
+
+def raw_to_intermediate_phenol_acetone_bpa(
+    phenol_df: pd.DataFrame, acetone_df: pd.DataFrame
+) -> None:
+    """Transforms raw phenol and acetone capacity loss data to intermediate BPA format.
+
+    This function extracts BPA (Bisphenol A) capacity loss data from both phenol and
+    acetone datasets. Since BPA production uses both chemicals with 0.999 correlation,
+    we extract only phenol BPA data to avoid redundancy. The data is transformed from
+    wide format (derivatives as rows, dates as columns) to long format (time series).
+
+    Args:
+        phenol_df (pd.DataFrame): Raw phenol capacity loss dataframe in wide format.
+        acetone_df (pd.DataFrame): Raw acetone capacity loss dataframe in wide format.
+    """
+    # Extract and transform BPA data using utility function
+    bpa_long = extract_bpa_capacity_loss(
+        phenol_df, derivative_col=raw_names.PHENOL_DERIVATIVE
+    )
+
+    # Save intermediate dataframe to CSV
+    logger.info(
+        "Saving intermediate BPA capacity loss dataset at "
+        f"{pth.INTERMEDIATE_PHENOL_ACETONE_DIR / 'intermediate_bpa_capacity_loss.csv'}"
+    )
+    bpa_long.to_csv(
+        pth.INTERMEDIATE_PHENOL_ACETONE_DIR / "intermediate_bpa_capacity_loss.csv",
+        index=False,
+    )
 
 
 def raw_to_intermediate_pc_price_eu(pc_price_eu: pd.DataFrame) -> None:
@@ -158,7 +189,7 @@ def raw_to_intermediate_pc_price_asia(
 
     # Complete missing conversion rates using the provided conversion rates dataframe
     logger.info("Completing missing conversion rates")
-    ## RMB to USD conversion
+    # RMB to USD conversion
     conversion_map_rmb = conversion_rates.set_index(raw_names.DEXCHUS_OBSERVATION_DATE)[
         raw_names.DEXCHUS_VALUE
     ].to_dict()
@@ -180,7 +211,7 @@ def raw_to_intermediate_pc_price_asia(
         .fillna(method="bfill")
     )
 
-    ## INR to USD conversion
+    # INR to USD conversion
     conversion_map_inr = conversion_rates.set_index(raw_names.DEXINUS_OBSERVATION_DATE)[
         raw_names.DEXINUS_VALUE
     ].to_dict()
@@ -250,6 +281,26 @@ def raw_to_intermediate_pc_price_asia(
 
 def raw_to_intermediate() -> None:
     """Runs all raw to intermediate data pipelines."""
+    # phenol_acetone_capacity_loss datasets
+    logger.info(
+        "Reading raw phenol capacity loss dataset at "
+        f"{pth.RAW_PHENOL_ACETONE_DIR / 'phenol_consumption_capacity_loss_kt.pq'}"
+    )
+    raw_phenol = pd.read_parquet(
+        pth.RAW_PHENOL_ACETONE_DIR / "phenol_consumption_capacity_loss_kt.pq"
+    )
+
+    logger.info(
+        "Reading raw acetone capacity loss dataset at "
+        f"{pth.RAW_PHENOL_ACETONE_DIR / 'acetone_consumption_capacity_loss_kt.pq'}"
+    )
+    raw_acetone = pd.read_parquet(
+        pth.RAW_PHENOL_ACETONE_DIR / "acetone_consumption_capacity_loss_kt.pq"
+    )
+
+    raw_to_intermediate_phenol_acetone_bpa(raw_phenol, raw_acetone)
+    logger.info("Completed processing raw to intermediate phenol/acetone BPA dataset")
+
     # pc_price datasets
     logger.info(
         "Reading raw pc_price Europe dataset at "

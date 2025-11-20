@@ -1,5 +1,15 @@
 # Column names for raw data files
 
+########################## phenol_acetone_capacity_loss ##########################
+
+# Phenol dataset
+PHENOL_DERIVATIVE = "Derivative"
+PHENOL_DATE_COLUMNS_PREFIX = ""  # Date columns are in format YYYY-MM-DD
+
+# Acetone dataset
+ACETONE_DERIVATIVE = "Derivative"
+ACETONE_DATE_COLUMNS_PREFIX = ""  # Date columns are in format YYYY-MM-DD
+
 ########################## pc_price ##########################
 # These column names are those obtained after cleaning the column names
 # using the clean_column_names function in src/utils/clean_column_names.py
@@ -268,10 +278,10 @@ PC_ASIA_PRICE_COLUMNS = [
 # These column names are those obtained after cleaning the column names
 # using the clean_column_names function in src/utils/clean_column_names.py
 
-#### DEXCHUS dataset - USD to RMB conversion rates
+# DEXCHUS dataset - USD to RMB conversion rates
 DEXCHUS_OBSERVATION_DATE = "observation_date"
 DEXCHUS_VALUE = "DEXCHUS"
 
-#### DEXINUS dataset - USD to INR conversion rates
+# DEXINUS dataset - USD to INR conversion rates
 DEXINUS_OBSERVATION_DATE = "observation_date"
 DEXINUS_VALUE = "DEXINUS"

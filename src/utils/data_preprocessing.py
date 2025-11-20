@@ -269,3 +269,78 @@ def compute_best_price_asia(df: pd.DataFrame, pc_type: str) -> pd.Series:
         f"Computing best price for '{pc_type}' from {len(matching_cols)} columns"
     )
     return df[matching_cols].min(axis=1)
+
+
+def extract_bpa_capacity_loss(
+    phenol_df: pd.DataFrame, derivative_col: str = "Derivative"
+) -> pd.DataFrame:
+    """Extract and transform BPA capacity loss data from phenol dataset.
+
+    Transforms data from wide format (derivatives as rows, dates as columns) to
+    long format (time series). Filters for BPA derivative only, removes non-date
+    columns, and converts to a clean time series format.
+
+    Args:
+        phenol_df (pd.DataFrame): Raw phenol capacity loss dataframe in wide format.
+        derivative_col (str): Name of the column containing derivative names.
+
+    Returns:
+        pd.DataFrame: Transformed BPA capacity loss data in long format with columns:
+            - date: datetime column
+            - bpa_capacity_loss_kt: capacity loss values in kilotons
+    """
+    import constants.intermediate_names as intermediate_names
+
+    logger.info("Extracting BPA capacity loss data from phenol dataset")
+
+    # Extract BPA row from phenol dataset
+    bpa_row = phenol_df[phenol_df[derivative_col] == "BISPHENOL A"].copy()
+
+    if bpa_row.empty:
+        logger.error("BPA derivative not found in phenol dataset")
+        raise ValueError("BISPHENOL A not found in phenol dataset")
+
+    # Keep only date columns (filter out Derivative, conversion factors, etc.)
+    date_columns = [
+        col
+        for col in bpa_row.columns
+        if col != derivative_col
+        and not col.startswith("Avg.")
+        and not col.lower().startswith("unnamed")
+    ]
+
+    logger.info(f"Found {len(date_columns)} date columns")
+    bpa_row = bpa_row[date_columns]
+
+    # Reshape from wide to long format (transpose)
+    bpa_long = bpa_row.T.reset_index()
+    bpa_long.columns = [
+        intermediate_names.BPA_DATE,
+        intermediate_names.BPA_CAPACITY_LOSS,
+    ]
+
+    # Convert date column to datetime (dates are in format "Mon YYYY" like "Jul 2017")
+    bpa_long[intermediate_names.BPA_DATE] = pd.to_datetime(
+        bpa_long[intermediate_names.BPA_DATE], format="%b %Y"
+    )
+
+    # Sort by date
+    bpa_long = bpa_long.sort_values(by=intermediate_names.BPA_DATE).reset_index(
+        drop=True
+    )
+
+    # Remove rows with missing capacity loss values
+    initial_count = len(bpa_long)
+    bpa_long = bpa_long.dropna(subset=[intermediate_names.BPA_CAPACITY_LOSS])
+    removed_count = initial_count - len(bpa_long)
+
+    if removed_count > 0:
+        logger.info(f"Removed {removed_count} rows with missing capacity loss values")
+
+    logger.info(
+        f"Processed BPA data: {len(bpa_long)} monthly observations from "
+        f"{bpa_long[intermediate_names.BPA_DATE].min().strftime('%Y-%m')} to "
+        f"{bpa_long[intermediate_names.BPA_DATE].max().strftime('%Y-%m')}"
+    )
+
+    return bpa_long

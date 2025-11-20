@@ -1,5 +1,11 @@
 # Column names for intermediate data files
 
+########################## phenol_acetone_capacity_loss ##########################
+
+# Intermediate columns for BPA capacity loss
+BPA_DATE = "date"
+BPA_CAPACITY_LOSS = "bpa_capacity_loss_kt"
+
 ########################## pc_price ##########################
 
 #### Europe dataset ####
