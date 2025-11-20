@@ -3,16 +3,32 @@ stages:
   raw_to_intermediate:
     cmd: uv run python3 src/data_pipelines/raw_to_intermediate.py
     deps:
+    - path: data/raw/DEXCHUS.csv
+      hash: md5
+      md5: 171abf84f31a980f719e7202a1e92974
+      size: 59629
+    - path: data/raw/DEXINUS.csv
+      hash: md5
+      md5: 34f9eb35d2c50b6a115d9760607fdf39
+      size: 62847
+    - path: data/raw/pc_price/pc_price_asia.csv
+      hash: md5
+      md5: d59f85920f17a69f5a9cdf94e5ba17db
+      size: 46702
     - path: data/raw/pc_price/pc_price_eu.csv
       hash: md5
       md5: edc3a7f9d1c6c0a2c057a03332cad020
       size: 73034
     - path: src/data_pipelines/raw_to_intermediate.py
       hash: md5
-      md5: c702cb11d8c1aec75c0adcb6c24c9de7
-      size: 6331
+      md5: da68afe15cdbb39909dfc9fa73416a1b
+      size: 11925
     outs:
+    - path: data/intermediate/pc_price/intermediate_pc_price_asia.csv
+      hash: md5
+      md5: 7cf03a45acad6c37004dc0eb745f0620
+      size: 28363
     - path: data/intermediate/pc_price/intermediate_pc_price_eu.csv
       hash: md5
-      md5: 6c3be3c61194e57e1460b705a3a74b77
-      size: 21629
+      md5: 786d8e093ddc2125373c2d13e600dea4
+      size: 27852
