@@ -93,6 +93,7 @@ def convert_pc_asia_prices(df_pc_asia: pd.DataFrame) -> pd.DataFrame:
     # Key: standardized column name, Value: list of (series, priority) tuples
     # Priority: 0 = USD/Kg (highest), 1 = RMB/Kg or INR/Kg, 2 = RMB/T (lowest)
     converted_cols_prioritized = {}
+    unparsed_cols = []
 
     for col in raw_names.PC_ASIA_PRICE_COLUMNS:
         supplier, pc_type = _get_supplier_pc_info(col)
@@ -124,12 +125,12 @@ def convert_pc_asia_prices(df_pc_asia: pd.DataFrame) -> pd.DataFrame:
             elif supplier is not None and pc_type is None:
                 # Column has supplier but no PC type (e.g., "asia_supplier_4  (usd/kg)")
                 # This might be a general PC price without specific type
-                logger.warning(f"Column '{col}' has supplier but no PC type, skipping")
-                continue
+                logger.warning(f"Dropping '{col}' - has supplier but no PC type")
+                unparsed_cols.append(col)
             else:
                 # No supplier and couldn't parse PC type
-                logger.warning(f"Skipping {col} - couldn't parse supplier/type")
-                continue
+                logger.warning(f"Dropping '{col}' - couldn't parse supplier/type")
+                unparsed_cols.append(col)
         else:
             # Create standardized column name with supplier
             new_col_name = f"{supplier} pc {pc_type} (usd/kg)"
@@ -217,6 +218,14 @@ def convert_pc_asia_prices(df_pc_asia: pd.DataFrame) -> pd.DataFrame:
         f"from {len(converted_original_cols)} original columns"
     )
 
+    if unparsed_cols:
+        logger.warning(
+            f"Dropped {len(unparsed_cols)} unparsed columns: {', '.join(unparsed_cols)}"
+        )
+        df_pc_asia_converted = df_pc_asia_converted.drop(
+            columns=unparsed_cols, errors="ignore"
+        )
+
     return df_pc_asia_converted
 
 
@@ -262,7 +271,7 @@ def compute_best_price_asia(df: pd.DataFrame, pc_type: str) -> pd.Series:
             matching_cols.append(col)
 
     if not matching_cols:
-        logger.warning(f"<orange>No columns found for PC type: {pc_type}</orange>")
+        logger.warning(f"No columns found for PC type: {pc_type}")
         return pd.Series([pd.NA] * len(df), index=df.index)
 
     logger.info(
