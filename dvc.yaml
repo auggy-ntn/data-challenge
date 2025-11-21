@@ -17,10 +17,13 @@ stages:
       - data/raw/DEXINUS.csv
       - data/raw/phenol_acetone_capacity_loss/phenol_consumption_capacity_loss_kt.pq
       - data/raw/phenol_acetone_capacity_loss/acetone_consumption_capacity_loss_kt.pq
+      - data/raw/electricity_price/european_wholesale_electricity_price_data_monthly.csv
     outs:
       - data/intermediate/pc_price/intermediate_pc_price_eu.csv
       - data/intermediate/pc_price/intermediate_pc_price_asia.csv
       - data/intermediate/phenol_acetone_capacity_loss/intermediate_bpa_capacity_loss.csv
+      - data/intermediate/electricity_price/intermediate_european_wholesale_electricity_price.csv
+
 
   # Stage 2: Convert intermediate data to processed format for univariate modeling
   intermediate_to_processed_uni:
