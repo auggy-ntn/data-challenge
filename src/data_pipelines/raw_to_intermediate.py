@@ -178,6 +178,10 @@ def raw_to_intermediate_pc_price_asia(
     logger.info("Cleaning column names")
     intermediate_df = clean_column_names(pc_price_asia).copy()
 
+    # Also drop year and month columns if they exist (since we have a date column)
+    year_month_columns = [raw_names.PC_ASIA_YEAR, raw_names.PC_ASIA_MONTH]
+    intermediate_df = intermediate_df.drop(columns=year_month_columns, errors="ignore")
+
     # Format date column to datetime
     intermediate_df[raw_names.PC_ASIA_DATE] = pd.to_datetime(
         intermediate_df[raw_names.PC_ASIA_DATE], format=cst.DATE_FORMAT
