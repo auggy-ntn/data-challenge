@@ -6,6 +6,7 @@
 !data/.gitkeep
 
 archive/
+docs/ARCHIVE*.md
 
 # Images
 images/*
