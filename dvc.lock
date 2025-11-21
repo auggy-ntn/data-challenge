@@ -66,8 +66,8 @@ stages:
       size: 28408
     - path: data/intermediate/pc_price/intermediate_pc_price_eu.csv
       hash: md5
-      md5: b9cd7f01932e1b6410db3a3a74f0779e
-      size: 27913
+      md5: 786d8e093ddc2125373c2d13e600dea4
+      size: 27852
     - path:
         data/intermediate/phenol_acetone_capacity_loss/intermediate_bpa_capacity_loss.csv
       hash: md5
