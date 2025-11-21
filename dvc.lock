@@ -19,16 +19,31 @@ stages:
       hash: md5
       md5: edc3a7f9d1c6c0a2c057a03332cad020
       size: 73034
+    - path:
+        data/raw/phenol_acetone_capacity_loss/acetone_consumption_capacity_loss_kt.pq
+      hash: md5
+      md5: eb7bbe8c100b8a4fe374b566f2169257
+      size: 61711
+    - path:
+        data/raw/phenol_acetone_capacity_loss/phenol_consumption_capacity_loss_kt.pq
+      hash: md5
+      md5: dc99ea4e96ae68c3fbb439d5d5fe697a
+      size: 59375
     - path: src/data_pipelines/raw_to_intermediate.py
       hash: md5
-      md5: da68afe15cdbb39909dfc9fa73416a1b
-      size: 11925
+      md5: f9dee844740c47bfc7cbdd558e299e99
+      size: 13968
     outs:
     - path: data/intermediate/pc_price/intermediate_pc_price_asia.csv
       hash: md5
-      md5: 7cf03a45acad6c37004dc0eb745f0620
-      size: 28363
+      md5: 408a347256687a16c1cb5c37fef45920
+      size: 28408
     - path: data/intermediate/pc_price/intermediate_pc_price_eu.csv
       hash: md5
-      md5: 786d8e093ddc2125373c2d13e600dea4
-      size: 27852
+      md5: b9cd7f01932e1b6410db3a3a74f0779e
+      size: 27913
+    - path:
+        data/intermediate/phenol_acetone_capacity_loss/intermediate_bpa_capacity_loss.csv
+      hash: md5
+      md5: b5e3d80dc4785cf0872788e670ed71f5
+      size: 1766

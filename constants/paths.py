@@ -25,6 +25,7 @@ RAW_SHUTDOWN_DIR = RAW_DATA_DIR / "shutdown"
 
 # Intermediate data subdirectories
 INTERMEDIATE_PC_PRICE_DIR = INTERMEDIATE_DATA_DIR / "pc_price"
+INTERMEDIATE_PHENOL_ACETONE_DIR = INTERMEDIATE_DATA_DIR / "phenol_acetone_capacity_loss"
 
 # Notebooks directory
 NOTEBOOKS_DIR = PROJECT_ROOT / "notebooks"
