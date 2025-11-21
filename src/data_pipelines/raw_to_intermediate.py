@@ -1,5 +1,6 @@
 # Contains the functions defining the raw to intermediate data pipelines
 
+from pathlib import Path
 
 import pandas as pd
 
@@ -283,6 +284,64 @@ def raw_to_intermediate_pc_price_asia(
     )
 
 
+def raw_to_intermediate_electricity_price(electricity_price: pd.DataFrame) -> None:
+    """Transforms the raw electricity dataset to intermediate format.
+
+    Standardizes column names, parses dates, coerces prices to numeric, drops invalid
+    rows, and writes the cleaned dataset.
+
+    Args:
+        electricity_price (pd.DataFrame): Raw electricity price dataframe.
+    """
+    logger.info("Cleaning column names")
+    intermediate_df = clean_column_names(electricity_price).copy()
+
+    # Standardize column names to snake_case conventions used elsewhere
+    rename_map = {
+        raw_names.ELECTRICITY_COUNTRY: intermediate_names.ELECTRICITY_COUNTRY,
+        raw_names.ELECTRICITY_ISO3_CODE: intermediate_names.ELECTRICITY_ISO3_CODE,
+        raw_names.ELECTRICITY_DATE: intermediate_names.ELECTRICITY_DATE,
+        raw_names.ELECTRICITY_PRICE_EUR_MWHE: (
+            intermediate_names.ELECTRICITY_PRICE_EUR_MWHE
+        ),
+    }
+    intermediate_df = intermediate_df.rename(columns=rename_map)
+
+    # Parse date column
+    intermediate_df[intermediate_names.ELECTRICITY_DATE] = pd.to_datetime(
+        intermediate_df[intermediate_names.ELECTRICITY_DATE],
+        format=cst.DATE_FORMAT,
+        errors="coerce",
+    )
+
+    # Ensure price is numeric
+    intermediate_df[intermediate_names.ELECTRICITY_PRICE_EUR_MWHE] = pd.to_numeric(
+        intermediate_df[intermediate_names.ELECTRICITY_PRICE_EUR_MWHE], errors="coerce"
+    )
+
+    # Drop rows with invalid date or price
+    intermediate_df = intermediate_df.dropna(
+        subset=[
+            intermediate_names.ELECTRICITY_DATE,
+            intermediate_names.ELECTRICITY_PRICE_EUR_MWHE,
+        ]
+    )
+
+    # Sort for deterministic output
+    intermediate_df = intermediate_df.sort_values(
+        by=[intermediate_names.ELECTRICITY_COUNTRY, intermediate_names.ELECTRICITY_DATE]
+    ).reset_index(drop=True)
+
+    # Save intermediate dataframe to CSV
+    output_path: Path = (
+        pth.INTERMEDIATE_ELECTRICITY_PRICE_DIR
+        / "intermediate_european_wholesale_electricity_price.csv"
+    )
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    logger.info(f"Saving intermediate electricity dataset at {output_path}")
+    intermediate_df.to_csv(output_path, index=False)
+
+
 def raw_to_intermediate() -> None:
     """Runs all raw to intermediate data pipelines."""
     # phenol_acetone_capacity_loss datasets
@@ -348,6 +407,16 @@ def raw_to_intermediate() -> None:
     raw_pc_price_asia = pd.read_csv(pth.RAW_PC_PRICE_DIR / "pc_price_asia.csv", sep=";")
     raw_to_intermediate_pc_price_asia(raw_pc_price_asia, df_conversion_rates)
     logger.info("Completed processing raw to intermediate pc_price Asia dataset")
+
+    # electricity_price dataset
+    electricity_path = (
+        pth.RAW_ELECTRICITY_PRICE_DIR
+        / "european_wholesale_electricity_price_data_monthly.csv"
+    )
+    logger.info("Reading raw electricity dataset at %s", electricity_path)
+    raw_electricity_prices = pd.read_csv(electricity_path)
+    raw_to_intermediate_electricity_price(raw_electricity_prices)
+    logger.info("Completed processing raw to intermediate electricity dataset")
 
 
 if __name__ == "__main__":

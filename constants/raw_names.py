@@ -285,3 +285,12 @@ DEXCHUS_VALUE = "DEXCHUS"
 # DEXINUS dataset - USD to INR conversion rates
 DEXINUS_OBSERVATION_DATE = "observation_date"
 DEXINUS_VALUE = "DEXINUS"
+
+
+########################## electricity_price ##########################
+
+# Electricity dataset (cleaned column names)
+ELECTRICITY_COUNTRY = "country"
+ELECTRICITY_ISO3_CODE = "iso3 code"
+ELECTRICITY_DATE = "date"
+ELECTRICITY_PRICE_EUR_MWHE = "price (eur/mwhe)"
