@@ -1,15 +1,18 @@
 # Intermediate to Processed Data Pipeline (for univariate modeling)
 
+
 import pandas as pd
 
 from constants import intermediate_names, processed_names
+import constants.constants as cst
+import constants.paths as pth
 import src.utils.feature_engineering as fe_utils
 
 
 def build_univariate_dataset(
     horizon: int,
     include_exogenous: bool = True,
-    include_differencing: bool = False,  # Only needed for ARIMA
+    include_differencing: bool = True,
 ) -> pd.DataFrame:
     """Complete pipeline for univariate modeling.
 
@@ -19,7 +22,7 @@ def build_univariate_dataset(
     Args:
         horizon: Forecast horizon in months (3, 6, or 9)
         include_exogenous: Whether to add exogenous variables
-        include_differencing: Whether to add differencing features (for ARIMA)
+        include_differencing: Whether to add differencing features (
 
     Returns:
         Wide format dataframe ready for univariate modeling with columns:
@@ -50,18 +53,23 @@ def build_univariate_dataset(
 
     # 5. Horizon-specific configuration
     # Avoid lookahead bias (i.e. lags/windows should be >= horizon)
-    if horizon == 3:
-        lags = [3, 6, 9]
-        windows = [3, 6]
-        roc_periods = [3, 6]
-    elif horizon == 6:
-        lags = [6, 12, 18]
-        windows = [6, 12]
-        roc_periods = [6, 9]
-    elif horizon == 9:
-        lags = [9, 12, 18, 24]
-        windows = [12, 24]
-        roc_periods = [9, 12]
+    if horizon == cst.HORIZON_3_MONTHS:
+        lags = [cst.LAG_3_MONTHS, cst.LAG_6_MONTHS, cst.LAG_9_MONTHS]
+        windows = [cst.ROLLING_WINDOW_3_MONTHS, cst.ROLLING_WINDOW_6_MONTHS]
+        roc_periods = [cst.ROC_PERIOD_3_MONTHS, cst.ROC_PERIOD_6_MONTHS]
+    elif horizon == cst.HORIZON_6_MONTHS:
+        lags = [cst.LAG_6_MONTHS, cst.LAG_12_MONTHS, cst.LAG_18_MONTHS]
+        windows = [cst.ROLLING_WINDOW_6_MONTHS, cst.ROLLING_WINDOW_12_MONTHS]
+        roc_periods = [cst.ROC_PERIOD_6_MONTHS, cst.ROC_PERIOD_9_MONTHS]
+    elif horizon == cst.HORIZON_9_MONTHS:
+        lags = [
+            cst.LAG_9_MONTHS,
+            cst.LAG_12_MONTHS,
+            cst.LAG_18_MONTHS,
+            cst.LAG_24_MONTHS,
+        ]
+        windows = [cst.ROLLING_WINDOW_12_MONTHS, cst.ROLLING_WINDOW_24_MONTHS]
+        roc_periods = [cst.ROC_PERIOD_9_MONTHS, cst.ROC_PERIOD_12_MONTHS]
     else:
         raise ValueError(f"Unsupported horizon: {horizon}. Must be 3, 6, or 9.")
 
@@ -94,4 +102,14 @@ def build_univariate_dataset(
             target_cols=intermediate_names.EXOGENOUS_COLUMNS,
         )
 
-    return wide_df
+        return wide_df
+
+
+if __name__ == "__main__":
+    df_3m = build_univariate_dataset(horizon=3)
+    df_6m = build_univariate_dataset(horizon=6)
+    df_9m = build_univariate_dataset(horizon=9)
+
+    df_3m.to_csv(pth.PROCESSED_DATA_DIR / "uni_3m.csv", index=False)
+    df_6m.to_csv(pth.PROCESSED_DATA_DIR / "uni_6m.csv", index=False)
+    df_9m.to_csv(pth.PROCESSED_DATA_DIR / "uni_9m.csv", index=False)

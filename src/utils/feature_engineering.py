@@ -284,7 +284,7 @@ def create_long_format() -> pd.DataFrame:
 
     eu_long_dfs = []
     for col in eu_df.columns:
-        if "best_price" in col:  # "best price" comes from preprocessing step
+        if "best_price" in col:  # "best_price" comes from preprocessing step
             pc_type = col.replace("_best_price", "").replace("pc_", "")
             temp_df = eu_df[[intermediate_names.PC_EU_DATE, col]].copy()
             temp_df[processed_names.LONG_REGION] = processed_names.EUROPE
@@ -341,62 +341,90 @@ def create_long_format() -> pd.DataFrame:
     return long_df
 
 
-def multi_add_time_features(df: pd.DataFrame) -> pd.DataFrame:
-    """Add temporal features."""
+def multi_add_time_features(
+    df: pd.DataFrame, date_col: str = processed_names.LONG_DATE
+) -> pd.DataFrame:
+    """Add temporal features.
+
+    Args:
+        df: Long format dataframe
+        date_col: Name of date column
+
+    Returns:
+        Dataframe with time features added
+    """
     df = df.copy()
 
+    # Ensure datetime type
+    if not pd.api.types.is_datetime64_any_dtype(df[date_col]):
+        df[date_col] = pd.to_datetime(df[date_col], format=cst.DATE_FORMAT)
+
     # Cyclical features - seasonality
-    df["month"] = df["date"].dt.month
-    df["quarter"] = df["date"].dt.quarter
-    df["month_sin"] = np.sin(2 * np.pi * df["month"] / 12)
-    df["month_cos"] = np.cos(2 * np.pi * df["month"] / 12)
-    df["quarter_sin"] = np.sin(2 * np.pi * df["quarter"] / 4)
-    df["quarter_cos"] = np.cos(2 * np.pi * df["quarter"] / 4)
+    df[processed_names.LONG_MONTH] = df[date_col].dt.month
+    df[processed_names.LONG_QUARTER] = df[date_col].dt.quarter
+    df[processed_names.LONG_MONTH_SIN] = np.sin(
+        2 * np.pi * df[processed_names.LONG_MONTH] / 12
+    )
+    df[processed_names.LONG_MONTH_COS] = np.cos(
+        2 * np.pi * df[processed_names.LONG_MONTH] / 12
+    )
+    df[processed_names.LONG_QUARTER_SIN] = np.sin(
+        2 * np.pi * df[processed_names.LONG_QUARTER] / 4
+    )
+    df[processed_names.LONG_QUARTER_COS] = np.cos(
+        2 * np.pi * df[processed_names.LONG_QUARTER] / 4
+    )
 
     # Trend
-    df["year"] = df["date"].dt.year
+    df[processed_names.LONG_YEAR] = df["date"].dt.year
+
+    # Time index (months since start)
+    df[processed_names.LONG_TIME_IDX] = (
+        df[processed_names.LONG_DATE] - df[processed_names.LONG_DATE].min()
+    ).dt.days / 30.44  # Approximate month length
 
     return df
 
 
 def multi_add_lag_features(
     df: pd.DataFrame,
-    target_col: str = processed_names.LONG_PC_PRICE,
+    lags: list,
+    target_cols: list[str],
     group_cols: list = None,
-    lags: list = None,
 ) -> pd.DataFrame:
     """Add lag features for the specified target column.
 
+    Since the data is in long format, lag features are created within each group
+    defined by `group_cols`.
+
     Args:
         df (pd.DataFrame): Input dataframe. Must be a long format dataframe.
-        target_col (str, optional): Target column to create lag features for.
+        lags (list): List of lag periods to create features for.
+        target_cols (list[str]): Target columns to create lag features for.
         group_cols (list, optional): Columns to group by when creating lag features.
-        lags (list, optional): List of lag periods to create features for.
 
     Returns:
         pd.DataFrame: Dataframe with lag features added.
     """
     if group_cols is None:
+        # Even for exogenous features, grouping by PC works fine
+        # as the features are the same across PCs at each timestamp
         group_cols = [processed_names.LONG_REGION, processed_names.LONG_PC_TYPE]
-    if lags is None:
-        lags = [
-            cst.LAG_1_MONTH,
-            cst.LAG_3_MONTHS,
-            cst.LAG_6_MONTHS,
-            cst.LAG_12_MONTHS,
-        ]
 
     df = df.copy()
 
-    for lag in lags:
-        df[f"{target_col}_lag_{lag}"] = df.groupby(group_cols)[target_col].shift(lag)
+    for target_col in target_cols:
+        for lag in lags:
+            df[f"{target_col}_lag_{lag}"] = df.groupby(group_cols)[target_col].shift(
+                lag
+            )
 
     return df
 
 
 def multi_add_rolling_features(
     df: pd.DataFrame,
-    target_col: str = processed_names.LONG_PC_PRICE,
+    target_cols: list[str],
     group_cols: list = None,
     windows: list = None,
 ) -> pd.DataFrame:
@@ -404,25 +432,24 @@ def multi_add_rolling_features(
 
     Args:
         df (pd.DataFrame): Input dataframe. Must be a long format dataframe.
-        target_col (str, optional): Target column to create rolling features for.
+        target_cols (list[str]): Target columns to create rolling features for.
         group_cols (list, optional): Columns to group by when creating rolling features.
-        windows (list, optional): List of rolling window sizes to create features for.
+        windows (list): List of rolling window sizes to create features for.
 
     Returns:
         pd.DataFrame: Dataframe with rolling features added.
     """
     if group_cols is None:
         group_cols = [processed_names.LONG_REGION, processed_names.LONG_PC_TYPE]
-    if windows is None:
-        windows = [3, 6, 12]  # in months
 
     df = df.copy()
 
-    for window in windows:
-        # Rolling mean
-        df[f"{target_col}_rolling_mean_{window}"] = df.groupby(group_cols)[
-            target_col
-        ].transform(lambda x, w=window: x.rolling(window=w, min_periods=1).mean())
+    for target_col in target_cols:
+        for window in windows:
+            # Rolling mean
+            df[f"{target_col}_rolling_mean_{window}"] = df.groupby(group_cols)[
+                target_col
+            ].transform(lambda x, w=window: x.rolling(window=w, min_periods=1).mean())
 
         # Rolling std
         df[f"{target_col}_rolling_std_{window}"] = df.groupby(group_cols)[
@@ -447,17 +474,17 @@ def multi_add_cross_series_features(df: pd.DataFrame) -> pd.DataFrame:
     regional_avg = df.groupby([processed_names.LONG_DATE, processed_names.LONG_REGION])[
         processed_names.LONG_PC_PRICE
     ].transform("mean")
-    df["regional_avg_price"] = regional_avg
+    df[processed_names.LONG_REGIONAL_AVG_PRICE] = regional_avg
 
     # Compute regional price volatility (std across PC types)
     regional_std = df.groupby([processed_names.LONG_DATE, processed_names.LONG_REGION])[
         processed_names.LONG_PC_PRICE
     ].transform("std")
-    df["regional_price_volatility"] = regional_std
+    df[processed_names.LONG_REGIONAL_PRICE_VOLATILITY] = regional_std
 
     # Deviation from regional average
-    df["price_deviation_from_regional_avg"] = (
-        df[processed_names.LONG_PC_PRICE] - df["regional_avg_price"]
+    df[processed_names.LONG_PRICE_DEVIATION_FROM_REGIONAL_AVG] = (
+        df[processed_names.LONG_PC_PRICE] - df[processed_names.LONG_REGIONAL_AVG_PRICE]
     )
     return df
 
@@ -486,6 +513,51 @@ def multi_add_pc_type_characteristics(df: pd.DataFrame) -> pd.DataFrame:
     # Is flame retardant?
     df[processed_names.LONG_PC_FLAME_RETARDANT] = (
         df[processed_names.LONG_PC_TYPE].str.contains("fr").astype(int)
+    )
+
+    return df
+
+
+def multi_add_momentum_features(
+    df: pd.DataFrame,
+    target_col: str = processed_names.LONG_PC_PRICE,
+    group_cols: list = None,
+) -> pd.DataFrame:
+    """Add momentum and acceleration features.
+
+    Momentum = rate of change of price
+    Acceleration = rate of change of momentum
+
+    Args:
+        df (pd.DataFrame): Input long format dataframe.
+        target_col (str): Target column to compute momentum features on.
+        group_cols (list, optional): Columns to group by when computing features.
+
+    Returns:
+        pd.DataFrame: Dataframe with momentum features added.
+    """
+    if group_cols is None:
+        group_cols = [processed_names.LONG_REGION, processed_names.LONG_PC_TYPE]
+
+    df = df.copy()
+
+    # Price momentum (1st derivative)
+    df[processed_names.LONG_PRICE_MOMENTUM_3M] = df.groupby(group_cols)[
+        target_col
+    ].transform(
+        lambda x: x.diff(3)  # Change over 3 months
+    )
+    df[processed_names.LONG_PRICE_MOMENTUM_6M] = df.groupby(group_cols)[
+        target_col
+    ].transform(
+        lambda x: x.diff(6)  # Change over 6 months
+    )
+
+    # Price acceleration (2nd derivative)
+    df[processed_names.LONG_PRICE_ACCELERATION_3M] = df.groupby(group_cols)[
+        processed_names.LONG_PRICE_MOMENTUM_3M
+    ].transform(
+        lambda x: x.diff(1)  # Change in momentum
     )
 
     return df
