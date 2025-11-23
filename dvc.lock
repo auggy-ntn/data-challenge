@@ -38,10 +38,18 @@ stages:
       hash: md5
       md5: dc99ea4e96ae68c3fbb439d5d5fe697a
       size: 59375
+    - path: data/raw/shutdown/Acetone.csv
+      hash: md5
+      md5: d8c6b01e69235c1283427760013488b8
+      size: 122396
+    - path: data/raw/shutdown/Phenol.csv
+      hash: md5
+      md5: 339dfeb972d716ee323d7305badc3ad1
+      size: 121819
     - path: src/data_pipelines/raw_to_intermediate.py
       hash: md5
-      md5: 4749a38d2e7d45dd3384c14cea3ba3a3
-      size: 20384
+      md5: 1d4e97b9edd058d6a5f6c4b2fecf7869
+      size: 24122
     outs:
     - path:
         data/intermediate/automobile_industry/intermediate_automobile_industry.csv
@@ -66,6 +74,10 @@ stages:
       hash: md5
       md5: b5e3d80dc4785cf0872788e670ed71f5
       size: 1766
+    - path: data/intermediate/shutdown/intermediate_shutdown_capacity_loss.csv
+      hash: md5
+      md5: 0fc38f202d6f9f4abd18d716355cbf78
+      size: 5220
   intermediate_to_processed_uni:
     cmd: uv run python3 src/data_pipelines/uni_intermediate_to_processed.py
     deps:
@@ -92,6 +104,10 @@ stages:
       hash: md5
       md5: b5e3d80dc4785cf0872788e670ed71f5
       size: 1766
+    - path: data/intermediate/shutdown/intermediate_shutdown_capacity_loss.csv
+      hash: md5
+      md5: 0fc38f202d6f9f4abd18d716355cbf78
+      size: 5220
     - path: src/data_pipelines/uni_intermediate_to_processed.py
       hash: md5
       md5: 91a74bbcf6d34560656b6a7316329cd9
@@ -99,16 +115,16 @@ stages:
     outs:
     - path: data/processed/uni_3m.csv
       hash: md5
-      md5: ed4d3ba0e2cc8024d04b80709aa78ac1
-      size: 597551
+      md5: 356714386a9f00a53f1f09511c653c2e
+      size: 633739
     - path: data/processed/uni_6m.csv
       hash: md5
-      md5: 1639492ceddb2bad8160d4951a93bcd0
-      size: 595637
+      md5: 2d306fa755863c4c004777612529e29b
+      size: 631825
     - path: data/processed/uni_9m.csv
       hash: md5
-      md5: cb4c84baad509dc015d7d20cdff13714
-      size: 627279
+      md5: d8ac4a72beafacbc2c8c9583c2c53911
+      size: 663435
   intermediate_to_processed_multi:
     cmd: uv run python3 src/data_pipelines/multi_intermediate_to_processed.py
     deps:
@@ -135,20 +151,24 @@ stages:
       hash: md5
       md5: b5e3d80dc4785cf0872788e670ed71f5
       size: 1766
+    - path: data/intermediate/shutdown/intermediate_shutdown_capacity_loss.csv
+      hash: md5
+      md5: 0fc38f202d6f9f4abd18d716355cbf78
+      size: 5220
     - path: src/data_pipelines/multi_intermediate_to_processed.py
       hash: md5
-      md5: 84c1ab6fcb6f403318d9a6c784a25283
-      size: 5457
+      md5: 529f58c0240e06ab7abbc71b85c5421b
+      size: 5611
     outs:
     - path: data/processed/multi_3m.csv
       hash: md5
-      md5: c6314a350fec7b25ad0357994b0ecaa4
-      size: 543670
+      md5: 6f761717c19ca0c3176eb0c28920d0ca
+      size: 638607
     - path: data/processed/multi_6m.csv
       hash: md5
-      md5: bf2be648053e3408d82c0455a487fac4
-      size: 541747
+      md5: e80df8305c2a1ae293ef40e99a0c1105
+      size: 636684
     - path: data/processed/multi_9m.csv
       hash: md5
-      md5: ef712e1ec5197fdf75fdd4dd9c52b607
-      size: 567383
+      md5: 680c27b8f7f93c7c4b49df587aef3d49
+      size: 662320

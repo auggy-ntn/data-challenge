@@ -40,6 +40,7 @@ stages:
       - data/intermediate/phenol_acetone_capacity_loss/intermediate_bpa_capacity_loss.csv
       - data/intermediate/electricity_price/intermediate_european_wholesale_electricity_price.csv
       - data/intermediate/automobile_industry/intermediate_automobile_industry.csv
+      - data/intermediate/shutdown/intermediate_shutdown_capacity_loss.csv
       # TODO: Add other intermediate data dependencies as needed
     outs:
       - data/processed/uni_3m.csv
@@ -56,6 +57,7 @@ stages:
       - data/intermediate/phenol_acetone_capacity_loss/intermediate_bpa_capacity_loss.csv
       - data/intermediate/electricity_price/intermediate_european_wholesale_electricity_price.csv
       - data/intermediate/automobile_industry/intermediate_automobile_industry.csv
+      - data/intermediate/shutdown/intermediate_shutdown_capacity_loss.csv
       # TODO: Add other intermediate data dependencies as needed
     outs:
       - data/processed/multi_3m.csv

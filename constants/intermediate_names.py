@@ -21,6 +21,14 @@ ELECTRICITY_AVG_PRICE_EUR_MWHE = "avg_price_eur_mwhe"
 ELECTRICITY_MEDIAN_PRICE_EUR_MWHE = "median_price_eur_mwhe"
 ELECTRICITY_STD_PRICE_EUR_MWHE = "std_price_eur_mwhe"
 
+########################## shutdown_capacity_loss ##########################
+
+# Shutdown capacity loss dataset
+SHUTDOWN_DATE = "date"
+SHUTDOWN_CHEMICAL = "chemical"
+SHUTDOWN_CAPACITY_LOSS = "capacity_loss_kt"
+SHUTDOWN_ACETONE_CAPACITY_LOSS = "acetone_capacity_loss_kt"
+SHUTDOWN_PHENOL_CAPACITY_LOSS = "phenol_capacity_loss_kt"
 
 ########################## automobile_industry ##########################
 
@@ -38,6 +46,8 @@ EXOGENOUS_COLUMNS = [
     ELECTRICITY_AVG_PRICE_EUR_MWHE,
     ELECTRICITY_MEDIAN_PRICE_EUR_MWHE,
     ELECTRICITY_STD_PRICE_EUR_MWHE,
+    SHUTDOWN_ACETONE_CAPACITY_LOSS,
+    SHUTDOWN_PHENOL_CAPACITY_LOSS,
 ]
 
 ########################## pc_price ##########################
@@ -90,8 +100,3 @@ ENDOGENOUS_COLUMNS = [
     ASIA_PREFIX + PC_ASIA_SI_BEST_PRICE,
     ASIA_PREFIX + PC_ASIA_SI_RECYCLED_BEST_PRICE,
 ]
-
-# Intermediate columns for shutdown capacity loss
-SHUTDOWN_DATE = "date"
-SHUTDOWN_CHEMICAL = "chemical"
-SHUTDOWN_CAPACITY_LOSS = "capacity_loss_kt"
