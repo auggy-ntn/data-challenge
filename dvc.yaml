@@ -21,3 +21,30 @@ stages:
       - data/intermediate/pc_price/intermediate_pc_price_eu.csv
       - data/intermediate/pc_price/intermediate_pc_price_asia.csv
       - data/intermediate/phenol_acetone_capacity_loss/intermediate_bpa_capacity_loss.csv
+
+  # Stage 2: Convert intermediate data to processed format for univariate modeling
+  intermediate_to_processed_uni:
+    cmd: uv run python3 src/data_pipelines/uni_intermediate_to_processed.py
+    deps:
+      - src/data_pipelines/uni_intermediate_to_processed.py
+      - data/intermediate/pc_price/intermediate_pc_price_eu.csv
+      - data/intermediate/pc_price/intermediate_pc_price_asia.csv
+      - data/intermediate/phenol_acetone_capacity_loss/intermediate_bpa_capacity_loss.csv
+      # TODO: Add other intermediate data dependencies as needed
+    outs:
+      - data/processed/uni_3m.csv
+      - data/processed/uni_6m.csv
+      - data/processed/uni_9m.csv
+
+  # Stage 2 bis: Convert intermediate data to processed format for multivariate modeling
+  intermediate_to_processed_multi:
+    cmd: uv run python3 src/data_pipelines/multi_intermediate_to_processed.py
+    deps:
+      - src/data_pipelines/multi_intermediate_to_processed.py
+      - data/intermediate/pc_price/intermediate_pc_price_eu.csv
+      - data/intermediate/pc_price/intermediate_pc_price_asia.csv
+      - data/intermediate/phenol_acetone_capacity_loss/intermediate_bpa_capacity_loss.csv
+    outs:
+      - data/processed/multi_3m.csv
+      - data/processed/multi_6m.csv
+      - data/processed/multi_9m.csv

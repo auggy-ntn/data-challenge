@@ -47,3 +47,69 @@ stages:
       hash: md5
       md5: b5e3d80dc4785cf0872788e670ed71f5
       size: 1766
+  intermediate_to_processed_uni:
+    cmd: uv run python3 src/data_pipelines/uni_intermediate_to_processed.py
+    deps:
+    - path: data/intermediate/pc_price/intermediate_pc_price_asia.csv
+      hash: md5
+      md5: 408a347256687a16c1cb5c37fef45920
+      size: 28408
+    - path: data/intermediate/pc_price/intermediate_pc_price_eu.csv
+      hash: md5
+      md5: b9cd7f01932e1b6410db3a3a74f0779e
+      size: 27913
+    - path:
+        data/intermediate/phenol_acetone_capacity_loss/intermediate_bpa_capacity_loss.csv
+      hash: md5
+      md5: b5e3d80dc4785cf0872788e670ed71f5
+      size: 1766
+    - path: src/data_pipelines/uni_intermediate_to_processed.py
+      hash: md5
+      md5: 150b766e47bb26fed3d282114a940b19
+      size: 4484
+    outs:
+    - path: data/processed/uni_3m.csv
+      hash: md5
+      md5: 0bfc5d7b369c6f8b92a93c1b9600f81a
+      size: 380801
+    - path: data/processed/uni_6m.csv
+      hash: md5
+      md5: 71455c0b6f6d0e34e8a1cd1c0f6b0ae8
+      size: 381369
+    - path: data/processed/uni_9m.csv
+      hash: md5
+      md5: 6cf0b3e11fb2e539698d1b059b0b22ed
+      size: 392820
+  intermediate_to_processed_multi:
+    cmd: uv run python3 src/data_pipelines/multi_intermediate_to_processed.py
+    deps:
+    - path: data/intermediate/pc_price/intermediate_pc_price_asia.csv
+      hash: md5
+      md5: 408a347256687a16c1cb5c37fef45920
+      size: 28408
+    - path: data/intermediate/pc_price/intermediate_pc_price_eu.csv
+      hash: md5
+      md5: b9cd7f01932e1b6410db3a3a74f0779e
+      size: 27913
+    - path:
+        data/intermediate/phenol_acetone_capacity_loss/intermediate_bpa_capacity_loss.csv
+      hash: md5
+      md5: b5e3d80dc4785cf0872788e670ed71f5
+      size: 1766
+    - path: src/data_pipelines/multi_intermediate_to_processed.py
+      hash: md5
+      md5: 781f0460919f2a47cde1103f96a9c938
+      size: 4486
+    outs:
+    - path: data/processed/multi_3m.csv
+      hash: md5
+      md5: 9998911246435c9016fa7881e6ccd5bc
+      size: 296564
+    - path: data/processed/multi_6m.csv
+      hash: md5
+      md5: 43c9324c2068a9af6fd5b8099c6cbe34
+      size: 294081
+    - path: data/processed/multi_9m.csv
+      hash: md5
+      md5: a9ca11f86cb4d74b3245ef74fd781111
+      size: 303637

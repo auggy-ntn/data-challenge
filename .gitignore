@@ -109,3 +109,4 @@ mlruns/
 docs/OWNER_CHECKLIST.md
 .claude
 CLAUDE.md
+docs/*VARIATE*.md
