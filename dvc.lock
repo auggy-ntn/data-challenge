@@ -11,6 +11,15 @@ stages:
       hash: md5
       md5: 34f9eb35d2c50b6a115d9760607fdf39
       size: 62847
+    - path: data/raw/automobile_industry/ECB Data Portal_20251123141544.csv
+      hash: md5
+      md5: 3dc1b4bc7dfb09f23f1ddc2682c3e7c6
+      size: 15132
+    - path:
+        data/raw/electricity_price/european_wholesale_electricity_price_data_monthly.csv
+      hash: md5
+      md5: f9e3bff349afb55af238886c1578f69b
+      size: 111852
     - path: data/raw/pc_price/pc_price_asia.csv
       hash: md5
       md5: d59f85920f17a69f5a9cdf94e5ba17db
@@ -31,9 +40,19 @@ stages:
       size: 59375
     - path: src/data_pipelines/raw_to_intermediate.py
       hash: md5
-      md5: 20b9a608c2a0ee66cab23c13b4aa293c
-      size: 14215
+      md5: 5b5c08e4d04e0ca06231973d9acb549a
+      size: 19521
     outs:
+    - path:
+        data/intermediate/automobile_industry/intermediate_automobile_industry.csv
+      hash: md5
+      md5: 4be9e7f02b074f60f8d65a6eb946f8bd
+      size: 8645
+    - path:
+        data/intermediate/electricity_price/intermediate_european_wholesale_electricity_price.csv
+      hash: md5
+      md5: b45b00d128ce8a95240dabd9b8251d07
+      size: 111786
     - path: data/intermediate/pc_price/intermediate_pc_price_asia.csv
       hash: md5
       md5: 49f6461ddce15011768bdf9862181bf1
@@ -52,12 +71,12 @@ stages:
     deps:
     - path: data/intermediate/pc_price/intermediate_pc_price_asia.csv
       hash: md5
-      md5: 408a347256687a16c1cb5c37fef45920
-      size: 28408
+      md5: 49f6461ddce15011768bdf9862181bf1
+      size: 26305
     - path: data/intermediate/pc_price/intermediate_pc_price_eu.csv
       hash: md5
-      md5: b9cd7f01932e1b6410db3a3a74f0779e
-      size: 27913
+      md5: 786d8e093ddc2125373c2d13e600dea4
+      size: 27852
     - path:
         data/intermediate/phenol_acetone_capacity_loss/intermediate_bpa_capacity_loss.csv
       hash: md5
@@ -65,32 +84,32 @@ stages:
       size: 1766
     - path: src/data_pipelines/uni_intermediate_to_processed.py
       hash: md5
-      md5: 150b766e47bb26fed3d282114a940b19
-      size: 4484
+      md5: 4be1b34d36c32f50b2c826115250ce75
+      size: 5182
     outs:
     - path: data/processed/uni_3m.csv
       hash: md5
-      md5: 0bfc5d7b369c6f8b92a93c1b9600f81a
-      size: 380801
+      md5: 7c6b0afa07f6c581c3c55b486287b1fd
+      size: 486935
     - path: data/processed/uni_6m.csv
       hash: md5
-      md5: 71455c0b6f6d0e34e8a1cd1c0f6b0ae8
-      size: 381369
+      md5: 6e292ac1c350d581f55b79a6df6d9a21
+      size: 485021
     - path: data/processed/uni_9m.csv
       hash: md5
-      md5: 6cf0b3e11fb2e539698d1b059b0b22ed
-      size: 392820
+      md5: 47a80f2b0c432df03312353c648aae72
+      size: 515604
   intermediate_to_processed_multi:
     cmd: uv run python3 src/data_pipelines/multi_intermediate_to_processed.py
     deps:
     - path: data/intermediate/pc_price/intermediate_pc_price_asia.csv
       hash: md5
-      md5: 408a347256687a16c1cb5c37fef45920
-      size: 28408
+      md5: 49f6461ddce15011768bdf9862181bf1
+      size: 26305
     - path: data/intermediate/pc_price/intermediate_pc_price_eu.csv
       hash: md5
-      md5: b9cd7f01932e1b6410db3a3a74f0779e
-      size: 27913
+      md5: 786d8e093ddc2125373c2d13e600dea4
+      size: 27852
     - path:
         data/intermediate/phenol_acetone_capacity_loss/intermediate_bpa_capacity_loss.csv
       hash: md5
@@ -98,18 +117,18 @@ stages:
       size: 1766
     - path: src/data_pipelines/multi_intermediate_to_processed.py
       hash: md5
-      md5: 781f0460919f2a47cde1103f96a9c938
-      size: 4486
+      md5: e99bd7a7dc62fe4c1fad449337eaecdc
+      size: 5192
     outs:
     - path: data/processed/multi_3m.csv
       hash: md5
-      md5: 9998911246435c9016fa7881e6ccd5bc
-      size: 296564
+      md5: f63f00b5574c332ed74696d90681fbde
+      size: 367173
     - path: data/processed/multi_6m.csv
       hash: md5
-      md5: 43c9324c2068a9af6fd5b8099c6cbe34
-      size: 294081
+      md5: 01b2709efdcc8476540136c97f1b0a59
+      size: 365250
     - path: data/processed/multi_9m.csv
       hash: md5
-      md5: a9ca11f86cb4d74b3245ef74fd781111
-      size: 303637
+      md5: edae3fe3efaa92dd4209a16e74a991c6
+      size: 390886
