@@ -10,6 +10,7 @@ from constants.paths import (
     INTERMEDIATE_ELECTRICITY_PRICE_DIR,
     INTERMEDIATE_PC_PRICE_DIR,
     INTERMEDIATE_PHENOL_ACETONE_DIR,
+    INTERMEDIATE_SHUTDOWN_DIR,
 )
 
 ############################ Univariate Feature Engineering ############################
@@ -114,7 +115,23 @@ def create_wide_format() -> pd.DataFrame:
         validate="1:1",
     )
 
-    # TODO: Add other datasets features here (Shutdown, commodities, etc.)
+    # Shutdown capacity loss
+    shutdown_capacity_loss = pd.read_csv(
+        INTERMEDIATE_SHUTDOWN_DIR / "intermediate_shutdown_capacity_loss.csv"
+    )
+    shutdown_capacity_loss[intermediate_names.SHUTDOWN_DATE] = pd.to_datetime(
+        shutdown_capacity_loss[intermediate_names.SHUTDOWN_DATE], format=cst.DATE_FORMAT
+    )
+    wide_df = pd.merge(
+        wide_df,
+        shutdown_capacity_loss,
+        left_on=processed_names.WIDE_DATE,
+        right_on=intermediate_names.SHUTDOWN_DATE,
+        how="left",
+        validate="1:1",
+    )
+
+    # TODO: Add other datasets features here (Commodities, etc.)
 
     return wide_df
 
@@ -407,7 +424,23 @@ def create_long_format() -> pd.DataFrame:
         validate="m:1",
     )
 
-    # TODO: Add other datasets features here:
+    # Shutdown capacity loss
+    shutdown_capacity_loss = pd.read_csv(
+        INTERMEDIATE_SHUTDOWN_DIR / "intermediate_shutdown_capacity_loss.csv"
+    )
+    shutdown_capacity_loss[intermediate_names.SHUTDOWN_DATE] = pd.to_datetime(
+        shutdown_capacity_loss[intermediate_names.SHUTDOWN_DATE], format=cst.DATE_FORMAT
+    )
+    long_df = pd.merge(
+        long_df,
+        shutdown_capacity_loss,
+        left_on=processed_names.LONG_DATE,
+        right_on=intermediate_names.SHUTDOWN_DATE,
+        how="left",
+        validate="m:1",
+    )
+
+    # TODO: Add other datasets features here (Commodities, etc.)
 
     return long_df
 

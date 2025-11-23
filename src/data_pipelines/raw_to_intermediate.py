@@ -86,13 +86,25 @@ def raw_to_intermediate_shutdown(
         ]
     ]
 
+    intermediate_df = combined_monthly.pivot(
+        index=intermediate_names.SHUTDOWN_DATE,
+        columns=intermediate_names.SHUTDOWN_CHEMICAL,
+        values=intermediate_names.SHUTDOWN_CAPACITY_LOSS,
+    )
+    intermediate_df = intermediate_df.rename(
+        columns={
+            "acetone": intermediate_names.SHUTDOWN_ACETONE_CAPACITY_LOSS,
+            "phenol": intermediate_names.SHUTDOWN_PHENOL_CAPACITY_LOSS,
+        },
+    ).reset_index()
+
     # Save intermediate dataframe to CSV
     logger.info(
         "Saving intermediate shutdown capacity loss dataset at "
         f"{pth.INTERMEDIATE_SHUTDOWN_DIR / 'intermediate_shutdown_capacity_loss.csv'}"
     )
     pth.INTERMEDIATE_SHUTDOWN_DIR.mkdir(parents=True, exist_ok=True)
-    combined_monthly.to_csv(
+    intermediate_df.to_csv(
         pth.INTERMEDIATE_SHUTDOWN_DIR / "intermediate_shutdown_capacity_loss.csv",
         index=False,
     )
