@@ -9,6 +9,7 @@ import constants.intermediate_names as intermediate_names
 import constants.paths as pth
 import constants.raw_names as raw_names
 from src.utils.data_preprocessing import (
+    aggregate_shutdowns_by_month,
     clean_column_names,
     compute_best_price_asia,
     convert_pc_asia_prices,
@@ -43,6 +44,56 @@ def raw_to_intermediate_phenol_acetone_bpa(
     )
     bpa_long.to_csv(
         pth.INTERMEDIATE_PHENOL_ACETONE_DIR / "intermediate_bpa_capacity_loss.csv",
+        index=False,
+    )
+
+
+def raw_to_intermediate_shutdown(
+    acetone_shutdown: pd.DataFrame, phenol_shutdown: pd.DataFrame
+) -> None:
+    """Transforms raw shutdown data to intermediate format with monthly capacity loss.
+
+    This function processes shutdown/outage events for both acetone and phenol,
+    distributing the total capacity loss across the months spanned by each outage.
+    The capacity loss is allocated proportionally based on the number of days
+    in each month during the outage period.
+
+    Args:
+        acetone_shutdown (pd.DataFrame): Raw acetone shutdown dataframe.
+        phenol_shutdown (pd.DataFrame): Raw phenol shutdown dataframe.
+    """
+    # Aggregate shutdowns by month using utility function
+    logger.info("Processing acetone shutdown data")
+    acetone_monthly = aggregate_shutdowns_by_month(acetone_shutdown, "acetone")
+
+    logger.info("Processing phenol shutdown data")
+    phenol_monthly = aggregate_shutdowns_by_month(phenol_shutdown, "phenol")
+
+    # Combine both chemicals
+    combined_monthly = pd.concat([acetone_monthly, phenol_monthly], ignore_index=True)
+
+    # Sort by date and chemical
+    combined_monthly = combined_monthly.sort_values(
+        [intermediate_names.SHUTDOWN_DATE, intermediate_names.SHUTDOWN_CHEMICAL]
+    ).reset_index(drop=True)
+
+    # Reorder columns to match expected format
+    combined_monthly = combined_monthly[
+        [
+            intermediate_names.SHUTDOWN_DATE,
+            intermediate_names.SHUTDOWN_CHEMICAL,
+            intermediate_names.SHUTDOWN_CAPACITY_LOSS,
+        ]
+    ]
+
+    # Save intermediate dataframe to CSV
+    logger.info(
+        "Saving intermediate shutdown capacity loss dataset at "
+        f"{pth.INTERMEDIATE_SHUTDOWN_DIR / 'intermediate_shutdown_capacity_loss.csv'}"
+    )
+    pth.INTERMEDIATE_SHUTDOWN_DIR.mkdir(parents=True, exist_ok=True)
+    combined_monthly.to_csv(
+        pth.INTERMEDIATE_SHUTDOWN_DIR / "intermediate_shutdown_capacity_loss.csv",
         index=False,
     )
 
@@ -514,6 +565,35 @@ def raw_to_intermediate() -> None:
     raw_auto = pd.read_csv(auto_path)
     raw_to_intermediate_automobile_industry(raw_auto)
     logger.info("Completed processing raw to intermediate automobile dataset")
+
+    # shutdown datasets
+    logger.info(
+        "Reading raw acetone shutdown dataset at "
+        f"{pth.RAW_SHUTDOWN_DIR / 'Acetone.csv'}"
+    )
+    raw_acetone_shutdown = pd.read_csv(pth.RAW_SHUTDOWN_DIR / "Acetone.csv")
+
+    logger.info(
+        f"Reading raw phenol shutdown dataset at {pth.RAW_SHUTDOWN_DIR / 'Phenol.csv'}"
+    )
+    raw_phenol_shutdown = pd.read_csv(pth.RAW_SHUTDOWN_DIR / "Phenol.csv")
+
+    # Convert date columns to datetime
+    raw_acetone_shutdown[raw_names.SHUTDOWN_OUTAGE_START_DATE] = pd.to_datetime(
+        raw_acetone_shutdown[raw_names.SHUTDOWN_OUTAGE_START_DATE], errors="coerce"
+    )
+    raw_acetone_shutdown[raw_names.SHUTDOWN_OUTAGE_END_DATE] = pd.to_datetime(
+        raw_acetone_shutdown[raw_names.SHUTDOWN_OUTAGE_END_DATE], errors="coerce"
+    )
+    raw_phenol_shutdown[raw_names.SHUTDOWN_OUTAGE_START_DATE] = pd.to_datetime(
+        raw_phenol_shutdown[raw_names.SHUTDOWN_OUTAGE_START_DATE], errors="coerce"
+    )
+    raw_phenol_shutdown[raw_names.SHUTDOWN_OUTAGE_END_DATE] = pd.to_datetime(
+        raw_phenol_shutdown[raw_names.SHUTDOWN_OUTAGE_END_DATE], errors="coerce"
+    )
+
+    raw_to_intermediate_shutdown(raw_acetone_shutdown, raw_phenol_shutdown)
+    logger.info("Completed processing raw to intermediate shutdown dataset")
 
 
 if __name__ == "__main__":

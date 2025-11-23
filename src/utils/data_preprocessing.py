@@ -353,3 +353,99 @@ def extract_bpa_capacity_loss(
     )
 
     return bpa_long
+
+
+def aggregate_shutdowns_by_month(
+    df_shutdown: pd.DataFrame, chemical_name: str
+) -> pd.DataFrame:
+    """Aggregate shutdown events by month for a given chemical.
+
+    For each shutdown event, distribute the capacity loss across the months
+    it spans, proportional to the number of days in each month.
+
+    Args:
+        df_shutdown: Shutdown dataframe with outage events.
+        chemical_name: Name of the chemical (e.g., "acetone", "phenol").
+
+    Returns:
+        DataFrame with monthly aggregated capacity loss with columns:
+            - date: datetime column
+            - chemical: chemical name
+            - capacity_loss_kt: capacity loss values in kilotons
+    """
+    import constants.intermediate_names as intermediate_names
+
+    monthly_losses = []
+
+    for _, row in df_shutdown.iterrows():
+        start_date = row[raw_names.SHUTDOWN_OUTAGE_START_DATE]
+        end_date = row[raw_names.SHUTDOWN_OUTAGE_END_DATE]
+        total_loss = row[raw_names.SHUTDOWN_TOTAL_CAPACITY_LOSS]
+
+        # Skip if dates or loss are invalid
+        if pd.isna(start_date) or pd.isna(end_date) or pd.isna(total_loss):
+            continue
+
+        # Convert to datetime if not already
+        if not isinstance(start_date, pd.Timestamp):
+            start_date = pd.to_datetime(start_date, errors="coerce")
+        if not isinstance(end_date, pd.Timestamp):
+            end_date = pd.to_datetime(end_date, errors="coerce")
+
+        if pd.isna(start_date) or pd.isna(end_date):
+            continue
+
+        # Calculate total days
+        total_days = (
+            end_date - start_date
+        ).days + 1  # +1 to include both start and end
+
+        if total_days <= 0:
+            continue
+
+        # Generate all dates in the outage period
+        date_range = pd.date_range(start=start_date, end=end_date, freq="D")
+
+        # Distribute capacity loss across days
+        daily_loss = total_loss / total_days
+
+        # Group by year-month and aggregate
+        for date in date_range:
+            year_month = date.to_period("M")
+            monthly_losses.append(
+                {
+                    "date": year_month.to_timestamp(),
+                    "capacity_loss_kt": daily_loss,
+                }
+            )
+
+    # Convert to DataFrame and aggregate by month
+    if not monthly_losses:
+        return pd.DataFrame(
+            columns=[
+                intermediate_names.SHUTDOWN_DATE,
+                intermediate_names.SHUTDOWN_CHEMICAL,
+                intermediate_names.SHUTDOWN_CAPACITY_LOSS,
+            ]
+        )
+
+    df_monthly = pd.DataFrame(monthly_losses)
+
+    # Aggregate by month (sum daily losses)
+    monthly_agg = (
+        df_monthly.groupby(intermediate_names.SHUTDOWN_DATE)[
+            intermediate_names.SHUTDOWN_CAPACITY_LOSS
+        ]
+        .sum()
+        .reset_index()
+    )
+
+    # Sort by date
+    monthly_agg = monthly_agg.sort_values(intermediate_names.SHUTDOWN_DATE).reset_index(
+        drop=True
+    )
+
+    # Add chemical column
+    monthly_agg[intermediate_names.SHUTDOWN_CHEMICAL] = chemical_name
+
+    return monthly_agg
