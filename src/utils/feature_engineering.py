@@ -5,7 +5,12 @@ import pandas as pd
 
 from constants import intermediate_names, processed_names
 import constants.constants as cst
-from constants.paths import INTERMEDIATE_PC_PRICE_DIR, INTERMEDIATE_PHENOL_ACETONE_DIR
+from constants.paths import (
+    INTERMEDIATE_AUTOMOBILE_INDUSTRY_DIR,
+    INTERMEDIATE_ELECTRICITY_PRICE_DIR,
+    INTERMEDIATE_PC_PRICE_DIR,
+    INTERMEDIATE_PHENOL_ACETONE_DIR,
+)
 
 ############################ Univariate Feature Engineering ############################
 
@@ -76,7 +81,40 @@ def create_wide_format() -> pd.DataFrame:
         validate="1:1",
     )
 
-    # TODO: Add other datasets features here (BPA capacity loss, etc.)
+    # Electricity prices
+    electricity_prices = pd.read_csv(
+        INTERMEDIATE_ELECTRICITY_PRICE_DIR
+        / "intermediate_european_wholesale_electricity_price.csv"
+    )
+    electricity_prices[intermediate_names.ELECTRICITY_DATE] = pd.to_datetime(
+        electricity_prices[intermediate_names.ELECTRICITY_DATE], format=cst.DATE_FORMAT
+    )
+    wide_df = pd.merge(
+        wide_df,
+        electricity_prices,
+        left_on=processed_names.WIDE_DATE,
+        right_on=intermediate_names.ELECTRICITY_DATE,
+        how="left",
+        validate="1:1",
+    )
+
+    # Automobile industry - new passenger car registrations
+    auto_industry = pd.read_csv(
+        INTERMEDIATE_AUTOMOBILE_INDUSTRY_DIR / "intermediate_automobile_industry.csv"
+    )
+    auto_industry[intermediate_names.AI_DATE] = pd.to_datetime(
+        auto_industry[intermediate_names.AI_DATE], format=cst.DATE_FORMAT
+    )
+    wide_df = pd.merge(
+        wide_df,
+        auto_industry,
+        left_on=processed_names.WIDE_DATE,
+        right_on=intermediate_names.AI_DATE,
+        how="left",
+        validate="1:1",
+    )
+
+    # TODO: Add other datasets features here (Shutdown, commodities, etc.)
 
     return wide_df
 
@@ -332,6 +370,39 @@ def create_long_format() -> pd.DataFrame:
         bpa_capacity_loss,
         left_on=processed_names.LONG_DATE,
         right_on=intermediate_names.BPA_DATE,
+        how="left",
+        validate="m:1",
+    )
+
+    # Electricity prices
+    electricity_prices = pd.read_csv(
+        INTERMEDIATE_ELECTRICITY_PRICE_DIR
+        / "intermediate_european_wholesale_electricity_price.csv"
+    )
+    electricity_prices[intermediate_names.ELECTRICITY_DATE] = pd.to_datetime(
+        electricity_prices[intermediate_names.ELECTRICITY_DATE], format=cst.DATE_FORMAT
+    )
+    long_df = pd.merge(
+        long_df,
+        electricity_prices,
+        left_on=processed_names.LONG_DATE,
+        right_on=intermediate_names.ELECTRICITY_DATE,
+        how="left",
+        validate="m:1",
+    )
+
+    # Automobile industry - new passenger car registrations
+    auto_industry = pd.read_csv(
+        INTERMEDIATE_AUTOMOBILE_INDUSTRY_DIR / "intermediate_automobile_industry.csv"
+    )
+    auto_industry[intermediate_names.AI_DATE] = pd.to_datetime(
+        auto_industry[intermediate_names.AI_DATE], format=cst.DATE_FORMAT
+    )
+    long_df = pd.merge(
+        long_df,
+        auto_industry,
+        left_on=processed_names.LONG_DATE,
+        right_on=intermediate_names.AI_DATE,
         how="left",
         validate="m:1",
     )

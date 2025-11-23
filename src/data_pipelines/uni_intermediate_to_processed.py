@@ -105,6 +105,7 @@ def build_univariate_dataset(
         raise ValueError(f"Unsupported horizon: {horizon}. Must be 3, 6, or 9.")
 
     # 6. Add temporal features for PC prices
+    wide_df = wide_df.sort_values(by=date_col).reset_index(drop=True)
     wide_df = fe_utils.uni_add_lag_features(
         wide_df, lags=lags, target_cols=pc_price_cols
     )
@@ -124,6 +125,7 @@ def build_univariate_dataset(
     # 7. Add temporal features for exogenous variables
     if include_exogenous:
         # Add lags for exogenous variables
+        wide_df = wide_df.sort_values(by=date_col).reset_index(drop=True)
         wide_df = fe_utils.uni_add_lag_features(
             wide_df, lags=lags[:2], target_cols=intermediate_names.EXOGENOUS_COLUMNS
         )  # Fewer lags for exog
@@ -133,7 +135,7 @@ def build_univariate_dataset(
             target_cols=intermediate_names.EXOGENOUS_COLUMNS,
         )
 
-        return wide_df
+        return wide_df.sort_values(by=date_col).reset_index(drop=True)
 
 
 if __name__ == "__main__":

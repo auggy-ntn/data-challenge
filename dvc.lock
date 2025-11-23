@@ -40,8 +40,8 @@ stages:
       size: 59375
     - path: src/data_pipelines/raw_to_intermediate.py
       hash: md5
-      md5: 5b5c08e4d04e0ca06231973d9acb549a
-      size: 19521
+      md5: 4749a38d2e7d45dd3384c14cea3ba3a3
+      size: 20384
     outs:
     - path:
         data/intermediate/automobile_industry/intermediate_automobile_industry.csv
@@ -51,8 +51,8 @@ stages:
     - path:
         data/intermediate/electricity_price/intermediate_european_wholesale_electricity_price.csv
       hash: md5
-      md5: b45b00d128ce8a95240dabd9b8251d07
-      size: 111786
+      md5: f63adaaa87b8041fab70969b730908ab
+      size: 8516
     - path: data/intermediate/pc_price/intermediate_pc_price_asia.csv
       hash: md5
       md5: 49f6461ddce15011768bdf9862181bf1
@@ -69,6 +69,16 @@ stages:
   intermediate_to_processed_uni:
     cmd: uv run python3 src/data_pipelines/uni_intermediate_to_processed.py
     deps:
+    - path:
+        data/intermediate/automobile_industry/intermediate_automobile_industry.csv
+      hash: md5
+      md5: 4be9e7f02b074f60f8d65a6eb946f8bd
+      size: 8645
+    - path:
+        data/intermediate/electricity_price/intermediate_european_wholesale_electricity_price.csv
+      hash: md5
+      md5: f63adaaa87b8041fab70969b730908ab
+      size: 8516
     - path: data/intermediate/pc_price/intermediate_pc_price_asia.csv
       hash: md5
       md5: 49f6461ddce15011768bdf9862181bf1
@@ -84,24 +94,34 @@ stages:
       size: 1766
     - path: src/data_pipelines/uni_intermediate_to_processed.py
       hash: md5
-      md5: 4be1b34d36c32f50b2c826115250ce75
-      size: 5182
+      md5: 91a74bbcf6d34560656b6a7316329cd9
+      size: 5374
     outs:
     - path: data/processed/uni_3m.csv
       hash: md5
-      md5: 7c6b0afa07f6c581c3c55b486287b1fd
-      size: 486935
+      md5: ed4d3ba0e2cc8024d04b80709aa78ac1
+      size: 597551
     - path: data/processed/uni_6m.csv
       hash: md5
-      md5: 6e292ac1c350d581f55b79a6df6d9a21
-      size: 485021
+      md5: 1639492ceddb2bad8160d4951a93bcd0
+      size: 595637
     - path: data/processed/uni_9m.csv
       hash: md5
-      md5: 47a80f2b0c432df03312353c648aae72
-      size: 515604
+      md5: cb4c84baad509dc015d7d20cdff13714
+      size: 627279
   intermediate_to_processed_multi:
     cmd: uv run python3 src/data_pipelines/multi_intermediate_to_processed.py
     deps:
+    - path:
+        data/intermediate/automobile_industry/intermediate_automobile_industry.csv
+      hash: md5
+      md5: 4be9e7f02b074f60f8d65a6eb946f8bd
+      size: 8645
+    - path:
+        data/intermediate/electricity_price/intermediate_european_wholesale_electricity_price.csv
+      hash: md5
+      md5: f63adaaa87b8041fab70969b730908ab
+      size: 8516
     - path: data/intermediate/pc_price/intermediate_pc_price_asia.csv
       hash: md5
       md5: 49f6461ddce15011768bdf9862181bf1
@@ -117,18 +137,18 @@ stages:
       size: 1766
     - path: src/data_pipelines/multi_intermediate_to_processed.py
       hash: md5
-      md5: e99bd7a7dc62fe4c1fad449337eaecdc
-      size: 5192
+      md5: 84c1ab6fcb6f403318d9a6c784a25283
+      size: 5457
     outs:
     - path: data/processed/multi_3m.csv
       hash: md5
-      md5: f63f00b5574c332ed74696d90681fbde
-      size: 367173
+      md5: c6314a350fec7b25ad0357994b0ecaa4
+      size: 543670
     - path: data/processed/multi_6m.csv
       hash: md5
-      md5: 01b2709efdcc8476540136c97f1b0a59
-      size: 365250
+      md5: bf2be648053e3408d82c0455a487fac4
+      size: 541747
     - path: data/processed/multi_9m.csv
       hash: md5
-      md5: edae3fe3efaa92dd4209a16e74a991c6
-      size: 390886
+      md5: ef712e1ec5197fdf75fdd4dd9c52b607
+      size: 567383

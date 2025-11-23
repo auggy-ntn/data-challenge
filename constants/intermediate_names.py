@@ -8,10 +8,36 @@ from constants.constants import ASIA_PREFIX, EU_PREFIX
 BPA_DATE = "date"
 BPA_CAPACITY_LOSS = "bpa_capacity_loss_kt"
 
+########################## electricity_price ##########################
+
+# Electricity dataset
+ELECTRICITY_DATE = "date"
+ELECTRICITY_COUNTRY = "country"
+ELECTRICITY_ISO3_CODE = "iso3_code"
+ELECTRICITY_PRICE_EUR_MWHE = "price_eur_mwhe"
+ELECTRICITY_MIN_PRICE_EUR_MWHE = "min_price_eur_mwhe"
+ELECTRICITY_MAX_PRICE_EUR_MWHE = "max_price_eur_mwhe"
+ELECTRICITY_AVG_PRICE_EUR_MWHE = "avg_price_eur_mwhe"
+ELECTRICITY_MEDIAN_PRICE_EUR_MWHE = "median_price_eur_mwhe"
+ELECTRICITY_STD_PRICE_EUR_MWHE = "std_price_eur_mwhe"
+
+
+########################## automobile_industry ##########################
+
+# ECB Data Portal passenger car registration
+AI_DATE = "date"
+AI_NEW_PASSENGER_REG = "new_passenger_car_registration"
+
 # Exogenous columns list
 # TODO: Complete when more exogenous variables are added
 EXOGENOUS_COLUMNS = [
     BPA_CAPACITY_LOSS,
+    AI_NEW_PASSENGER_REG,
+    ELECTRICITY_MIN_PRICE_EUR_MWHE,
+    ELECTRICITY_MAX_PRICE_EUR_MWHE,
+    ELECTRICITY_AVG_PRICE_EUR_MWHE,
+    ELECTRICITY_MEDIAN_PRICE_EUR_MWHE,
+    ELECTRICITY_STD_PRICE_EUR_MWHE,
 ]
 
 ########################## pc_price ##########################
@@ -64,18 +90,3 @@ ENDOGENOUS_COLUMNS = [
     ASIA_PREFIX + PC_ASIA_SI_BEST_PRICE,
     ASIA_PREFIX + PC_ASIA_SI_RECYCLED_BEST_PRICE,
 ]
-
-########################## electricity_price ##########################
-
-# Electricity dataset
-ELECTRICITY_COUNTRY = "country"
-ELECTRICITY_ISO3_CODE = "iso3_code"
-ELECTRICITY_DATE = "date"
-ELECTRICITY_PRICE_EUR_MWHE = "price_eur_mwhe"
-
-
-########################## automobile_industry ##########################
-
-# ECB Data Portal passenger car registration
-AI_DATE = "date"
-AI_NEW_PASSENGER_REG = "new_passenger_car_registration"
