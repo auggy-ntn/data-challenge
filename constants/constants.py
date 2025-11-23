@@ -1,4 +1,5 @@
 # Constants for the project
+from enum import Enum
 
 # Prefixes for datasets
 EU_PREFIX = "eu_"
@@ -7,6 +8,20 @@ ASIA_PREFIX = "asia_"
 # Date format used across datasets
 DATE_FORMAT = "%Y-%m-%d"
 
+
+# PC types
+class PCType(Enum):
+    """Available PC types in the data for Europe."""
+
+    CRYSTAL = "crystal"
+    WHITE = "white"
+    GF10 = "gf10"
+    GF20 = "gf20"
+    RECYCLED_GF10_WHITE = "recycled_gf10_white"
+    RECYCLED_GF10_GREY = "recycled_gf10_grey"
+    SI = "si"
+
+
 # Horizons in months
 HORIZON_3_MONTHS = 3
 HORIZON_6_MONTHS = 6
@@ -14,6 +29,7 @@ HORIZON_9_MONTHS = 9
 
 # Lag values in months
 LAG_1_MONTH = 1
+LAG_2_MONTHS = 2
 LAG_3_MONTHS = 3
 LAG_6_MONTHS = 6
 LAG_9_MONTHS = 9

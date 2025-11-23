@@ -52,23 +52,54 @@ def build_univariate_dataset(
     pc_price_cols = intermediate_names.ENDOGENOUS_COLUMNS
 
     # 5. Horizon-specific configuration
-    # Avoid lookahead bias (i.e. lags/windows should be >= horizon)
+    # For direct forecasting, we can use all historical lags including recent ones
+    # Recent lags (1, 2, 3) provide the most predictive power
     if horizon == cst.HORIZON_3_MONTHS:
-        lags = [cst.LAG_3_MONTHS, cst.LAG_6_MONTHS, cst.LAG_9_MONTHS]
-        windows = [cst.ROLLING_WINDOW_3_MONTHS, cst.ROLLING_WINDOW_6_MONTHS]
+        lags = [
+            cst.LAG_1_MONTH,
+            cst.LAG_2_MONTHS,
+            cst.LAG_3_MONTHS,
+            cst.LAG_6_MONTHS,
+            cst.LAG_9_MONTHS,
+            cst.LAG_12_MONTHS,
+        ]
+        windows = [
+            cst.ROLLING_WINDOW_3_MONTHS,
+            cst.ROLLING_WINDOW_6_MONTHS,
+            cst.ROLLING_WINDOW_12_MONTHS,
+        ]
         roc_periods = [cst.ROC_PERIOD_3_MONTHS, cst.ROC_PERIOD_6_MONTHS]
     elif horizon == cst.HORIZON_6_MONTHS:
-        lags = [cst.LAG_6_MONTHS, cst.LAG_12_MONTHS, cst.LAG_18_MONTHS]
-        windows = [cst.ROLLING_WINDOW_6_MONTHS, cst.ROLLING_WINDOW_12_MONTHS]
+        lags = [
+            cst.LAG_1_MONTH,
+            cst.LAG_2_MONTHS,
+            cst.LAG_3_MONTHS,
+            cst.LAG_6_MONTHS,
+            cst.LAG_12_MONTHS,
+            cst.LAG_18_MONTHS,
+        ]
+        windows = [
+            cst.ROLLING_WINDOW_3_MONTHS,
+            cst.ROLLING_WINDOW_6_MONTHS,
+            cst.ROLLING_WINDOW_12_MONTHS,
+        ]
         roc_periods = [cst.ROC_PERIOD_6_MONTHS, cst.ROC_PERIOD_9_MONTHS]
     elif horizon == cst.HORIZON_9_MONTHS:
         lags = [
+            cst.LAG_1_MONTH,
+            cst.LAG_2_MONTHS,
+            cst.LAG_3_MONTHS,
+            cst.LAG_6_MONTHS,
             cst.LAG_9_MONTHS,
             cst.LAG_12_MONTHS,
             cst.LAG_18_MONTHS,
             cst.LAG_24_MONTHS,
         ]
-        windows = [cst.ROLLING_WINDOW_12_MONTHS, cst.ROLLING_WINDOW_24_MONTHS]
+        windows = [
+            cst.ROLLING_WINDOW_6_MONTHS,
+            cst.ROLLING_WINDOW_12_MONTHS,
+            cst.ROLLING_WINDOW_24_MONTHS,
+        ]
         roc_periods = [cst.ROC_PERIOD_9_MONTHS, cst.ROC_PERIOD_12_MONTHS]
     else:
         raise ValueError(f"Unsupported horizon: {horizon}. Must be 3, 6, or 9.")
