@@ -11,6 +11,10 @@ stages:
       hash: md5
       md5: 34f9eb35d2c50b6a115d9760607fdf39
       size: 62847
+    - path: data/raw/automobile_industry/ECB Data Portal_20251123141544.csv
+      hash: md5
+      md5: 3dc1b4bc7dfb09f23f1ddc2682c3e7c6
+      size: 15132
     - path:
         data/raw/electricity_price/european_wholesale_electricity_price_data_monthly.csv
       hash: md5
@@ -40,18 +44,23 @@ stages:
       size: 14215
     outs:
     - path:
+        data/intermediate/automobile_industry/intermediate_automobile_industry.csv
+      hash: md5
+      md5: 4be9e7f02b074f60f8d65a6eb946f8bd
+      size: 8645
+    - path:
         data/intermediate/electricity_price/intermediate_european_wholesale_electricity_price.csv
       hash: md5
       md5: b45b00d128ce8a95240dabd9b8251d07
       size: 111786
     - path: data/intermediate/pc_price/intermediate_pc_price_asia.csv
       hash: md5
-      md5: 49f6461ddce15011768bdf9862181bf1
-      size: 26305
+      md5: d7f1e2ddc31736b1b338b8e179e74c23
+      size: 26345
     - path: data/intermediate/pc_price/intermediate_pc_price_eu.csv
       hash: md5
-      md5: 786d8e093ddc2125373c2d13e600dea4
-      size: 27852
+      md5: b9cd7f01932e1b6410db3a3a74f0779e
+      size: 27913
     - path:
         data/intermediate/phenol_acetone_capacity_loss/intermediate_bpa_capacity_loss.csv
       hash: md5

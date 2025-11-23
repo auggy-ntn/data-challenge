@@ -79,6 +79,7 @@ Polycarbonate is synthesized from **Bisphenol A (BPA)** and **phosgene**. BPA is
   - `unit`: Number (NR)
   - `mot_nrg`: Motor energy type
   - `geo`: Geopolitical entity
+New file added: ECB / https://data.ecb.europa.eu/data/datasets/CAR/CAR.M.I9.Y.CREG.PC0000.4F0.N.PN
 
 ---
 

@@ -342,6 +342,65 @@ def raw_to_intermediate_electricity_price(electricity_price: pd.DataFrame) -> No
     intermediate_df.to_csv(output_path, index=False)
 
 
+def raw_to_intermediate_automobile_industry(auto_df: pd.DataFrame) -> None:
+    """Transforms ECB automobile industry data to intermediate format.
+
+    Keeps date (normalized to first day of month) and new passenger car registration,
+    drops the time period column, and writes the cleaned dataset.
+
+    Args:
+        auto_df (pd.DataFrame): Raw automobile industry dataframe.
+    """
+    logger.info("Cleaning column names")
+    intermediate_df = clean_column_names(auto_df).copy()
+
+    rename_map = {
+        raw_names.AI_DATE: intermediate_names.AI_DATE,
+        raw_names.AI_NEW_PASSENGER_REG: intermediate_names.AI_NEW_PASSENGER_REG,
+    }
+    intermediate_df = intermediate_df.rename(columns=rename_map)
+
+    # Parse date and set to first day of month
+    intermediate_df[intermediate_names.AI_DATE] = (
+        pd.to_datetime(
+            intermediate_df[intermediate_names.AI_DATE],
+            format=cst.DATE_FORMAT,
+            errors="coerce",
+        )
+        .dt.to_period("M")
+        .dt.to_timestamp()
+    )
+
+    # Ensure registrations are numeric
+    intermediate_df[intermediate_names.AI_NEW_PASSENGER_REG] = pd.to_numeric(
+        intermediate_df[intermediate_names.AI_NEW_PASSENGER_REG],
+        errors="coerce",
+    )
+
+    # Drop unneeded column if present
+    intermediate_df = intermediate_df.drop(
+        columns=[raw_names.AI_TIME_PERIOD], errors="ignore"
+    )
+
+    # Drop invalid rows
+    intermediate_df = intermediate_df.dropna(
+        subset=[intermediate_names.AI_DATE, intermediate_names.AI_NEW_PASSENGER_REG]
+    )
+
+    # Sort for deterministic output
+    intermediate_df = intermediate_df.sort_values(
+        by=[intermediate_names.AI_DATE]
+    ).reset_index(drop=True)
+
+    output_path: Path = (
+        pth.INTERMEDIATE_AUTOMOBILE_INDUSTRY_DIR
+        / "intermediate_automobile_industry.csv"
+    )
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    logger.info("Saving intermediate automobile dataset at %s", output_path)
+    intermediate_df.to_csv(output_path, index=False)
+
+
 def raw_to_intermediate() -> None:
     """Runs all raw to intermediate data pipelines."""
     # phenol_acetone_capacity_loss datasets
@@ -417,6 +476,18 @@ def raw_to_intermediate() -> None:
     raw_electricity_prices = pd.read_csv(electricity_path)
     raw_to_intermediate_electricity_price(raw_electricity_prices)
     logger.info("Completed processing raw to intermediate electricity dataset")
+
+    # automobile_industry dataset
+    auto_files = sorted(pth.RAW_AUTOMOBILE_INDUSTRY_DIR.glob("ECB Data Portal_*.csv"))
+    if not auto_files:
+        raise FileNotFoundError(
+            f"No ECB automobile industry CSV found in {pth.RAW_AUTOMOBILE_INDUSTRY_DIR}"
+        )
+    auto_path = auto_files[0]
+    logger.info("Reading raw automobile industry dataset at %s", auto_path)
+    raw_auto = pd.read_csv(auto_path)
+    raw_to_intermediate_automobile_industry(raw_auto)
+    logger.info("Completed processing raw to intermediate automobile dataset")
 
 
 if __name__ == "__main__":

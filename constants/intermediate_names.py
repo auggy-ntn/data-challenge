@@ -72,3 +72,10 @@ ELECTRICITY_COUNTRY = "country"
 ELECTRICITY_ISO3_CODE = "iso3_code"
 ELECTRICITY_DATE = "date"
 ELECTRICITY_PRICE_EUR_MWHE = "price_eur_mwhe"
+
+
+########################## automobile_industry ##########################
+
+# ECB Data Portal passenger car registration
+AI_DATE = "date"
+AI_NEW_PASSENGER_REG = "new_passenger_car_registration"
