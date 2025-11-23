@@ -90,3 +90,8 @@ ENDOGENOUS_COLUMNS = [
     ASIA_PREFIX + PC_ASIA_SI_BEST_PRICE,
     ASIA_PREFIX + PC_ASIA_SI_RECYCLED_BEST_PRICE,
 ]
+
+# Intermediate columns for shutdown capacity loss
+SHUTDOWN_DATE = "date"
+SHUTDOWN_CHEMICAL = "chemical"
+SHUTDOWN_CAPACITY_LOSS = "capacity_loss_kt"

@@ -304,3 +304,11 @@ AI_TIME_PERIOD = "time period"
 AI_NEW_PASSENGER_REG = (
     "new passenger car registration (car.m.i9.y.creg.pc0000.4f0.n.pn)"
 )
+
+########################## shutdown ##########################
+
+# Shutdown dataset columns
+SHUTDOWN_COMMODITY = "Commodity"
+SHUTDOWN_OUTAGE_START_DATE = "Outage Start Date"
+SHUTDOWN_OUTAGE_END_DATE = "Outage End Date"
+SHUTDOWN_TOTAL_CAPACITY_LOSS = "Total Capacity Loss (kt)"
