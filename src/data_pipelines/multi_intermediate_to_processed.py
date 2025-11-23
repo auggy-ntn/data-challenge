@@ -116,6 +116,9 @@ def build_multivariate_dataset(
         raise ValueError(f"Unsupported horizon: {horizon}. Must be 3, 6, or 9.")
 
     # 5. Add temporal features for PC prices
+    long_df = long_df.sort_values(
+        [processed_names.LONG_REGION, processed_names.LONG_PC_TYPE, date_col]
+    ).reset_index(drop=True)
     long_df = fe_utils.multi_add_lag_features(
         df=long_df, target_cols=[processed_names.LONG_PC_PRICE], lags=lags
     )
@@ -132,6 +135,9 @@ def build_multivariate_dataset(
     # 8. Add temporal features for exogenous variables
     if include_exogenous:
         # Add lags for exogenous variables
+        long_df = long_df.sort_values(
+            [processed_names.LONG_REGION, processed_names.LONG_PC_TYPE, date_col]
+        ).reset_index(drop=True)
         long_df = fe_utils.multi_add_lag_features(
             df=long_df,
             target_cols=intermediate_names.EXOGENOUS_COLUMNS,
@@ -139,7 +145,9 @@ def build_multivariate_dataset(
             lags=lags[:2],
         )
 
-    return long_df
+    return long_df.sort_values(
+        by=[date_col, processed_names.LONG_REGION, processed_names.LONG_PC_TYPE]
+    ).reset_index(drop=True)
 
 
 if __name__ == "__main__":

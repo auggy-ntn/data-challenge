@@ -35,6 +35,8 @@ stages:
       - data/intermediate/pc_price/intermediate_pc_price_eu.csv
       - data/intermediate/pc_price/intermediate_pc_price_asia.csv
       - data/intermediate/phenol_acetone_capacity_loss/intermediate_bpa_capacity_loss.csv
+      - data/intermediate/electricity_price/intermediate_european_wholesale_electricity_price.csv
+      - data/intermediate/automobile_industry/intermediate_automobile_industry.csv
       # TODO: Add other intermediate data dependencies as needed
     outs:
       - data/processed/uni_3m.csv
@@ -49,8 +51,10 @@ stages:
       - data/intermediate/pc_price/intermediate_pc_price_eu.csv
       - data/intermediate/pc_price/intermediate_pc_price_asia.csv
       - data/intermediate/phenol_acetone_capacity_loss/intermediate_bpa_capacity_loss.csv
+      - data/intermediate/electricity_price/intermediate_european_wholesale_electricity_price.csv
+      - data/intermediate/automobile_industry/intermediate_automobile_industry.csv
+      # TODO: Add other intermediate data dependencies as needed
     outs:
       - data/processed/multi_3m.csv
       - data/processed/multi_6m.csv
       - data/processed/multi_9m.csv
-

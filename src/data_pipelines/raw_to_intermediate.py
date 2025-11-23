@@ -332,6 +332,32 @@ def raw_to_intermediate_electricity_price(electricity_price: pd.DataFrame) -> No
         by=[intermediate_names.ELECTRICITY_COUNTRY, intermediate_names.ELECTRICITY_DATE]
     ).reset_index(drop=True)
 
+    # Compute aggregate statistics by date
+    logger.info("Computing aggregate electricity price statistics by date")
+    agg_df = (
+        intermediate_df.groupby(intermediate_names.ELECTRICITY_DATE)[
+            intermediate_names.ELECTRICITY_PRICE_EUR_MWHE
+        ]
+        .agg(
+            [
+                "min",
+                "max",
+                "mean",
+                "median",
+                "std",
+            ]
+        )
+        .reset_index()
+    ).rename(
+        columns={
+            "min": intermediate_names.ELECTRICITY_MIN_PRICE_EUR_MWHE,
+            "max": intermediate_names.ELECTRICITY_MAX_PRICE_EUR_MWHE,
+            "mean": intermediate_names.ELECTRICITY_AVG_PRICE_EUR_MWHE,
+            "median": intermediate_names.ELECTRICITY_MEDIAN_PRICE_EUR_MWHE,
+            "std": intermediate_names.ELECTRICITY_STD_PRICE_EUR_MWHE,
+        }
+    )
+
     # Save intermediate dataframe to CSV
     output_path: Path = (
         pth.INTERMEDIATE_ELECTRICITY_PRICE_DIR
@@ -339,7 +365,7 @@ def raw_to_intermediate_electricity_price(electricity_price: pd.DataFrame) -> No
     )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     logger.info(f"Saving intermediate electricity dataset at {output_path}")
-    intermediate_df.to_csv(output_path, index=False)
+    agg_df.to_csv(output_path, index=False)
 
 
 def raw_to_intermediate_automobile_industry(auto_df: pd.DataFrame) -> None:
