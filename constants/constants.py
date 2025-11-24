@@ -11,7 +11,10 @@ DATE_FORMAT = "%Y-%m-%d"
 
 # PC types
 class PCType(Enum):
-    """Available PC types in the data for Europe."""
+    """Available PC types in the data for Europe.
+
+    These are the target categories for forecasting.
+    """
 
     CRYSTAL = "crystal"
     WHITE = "white"
