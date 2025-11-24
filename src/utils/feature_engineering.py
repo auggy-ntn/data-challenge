@@ -342,7 +342,7 @@ def create_long_format() -> pd.DataFrame:
         if "best_price" in col:  # "best_price" comes from preprocessing step
             pc_type = col.replace("_best_price", "").replace("pc_", "")
             temp_df = eu_df[[intermediate_names.PC_EU_DATE, col]].copy()
-            temp_df[processed_names.LONG_REGION] = processed_names.EUROPE
+            temp_df[processed_names.LONG_REGION] = cst.EUROPE
             temp_df[processed_names.LONG_PC_TYPE] = pc_type
             temp_df.rename(columns={col: processed_names.LONG_PC_PRICE}, inplace=True)
             eu_long_dfs.append(temp_df)
@@ -352,7 +352,7 @@ def create_long_format() -> pd.DataFrame:
         if "best_price" in col:
             pc_type = col.replace("_best_price", "").replace("pc_", "")
             temp_df = asia_df[[intermediate_names.PC_ASIA_DATE, col]].copy()
-            temp_df[processed_names.LONG_REGION] = processed_names.ASIA
+            temp_df[processed_names.LONG_REGION] = cst.ASIA
             temp_df[processed_names.LONG_PC_TYPE] = pc_type
             temp_df.rename(columns={col: processed_names.LONG_PC_PRICE}, inplace=True)
             asia_long_dfs.append(temp_df)

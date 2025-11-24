@@ -142,7 +142,7 @@ def build_multivariate_dataset(
             df=long_df,
             target_cols=intermediate_names.EXOGENOUS_COLUMNS,
             group_cols=[processed_names.LONG_REGION, processed_names.LONG_PC_TYPE],
-            lags=lags[:2],
+            lags=lags[:3],
         )
 
     return long_df.sort_values(
