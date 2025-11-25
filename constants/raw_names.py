@@ -121,6 +121,16 @@ PC_EU_SI_COLUMNS = [
     PC_EU_SUPPLIER_7_SI,
 ]
 
+# Europe dataset - Regular and Green columns
+PC_EU_REGULAR_COLUMNS = (
+    PC_EU_CRYSTAL_COLUMNS
+    + PC_EU_WHITE_COLUMNS
+    + PC_EU_GF_10_COLUMNS
+    + PC_EU_GF20_COLUMNS
+    + PC_EU_SI_COLUMNS
+)
+PC_EU_GREEN_COLUMNS = PC_EU_RECYCLED_WHITE_COLUMNS + PC_EU_RECYCLED_GREY_COLUMNS
+
 # Legacy/reference columns
 PC_EU_PIE = "pc pie"
 PC_EU_PIE_NORM = "pc pie normalized"

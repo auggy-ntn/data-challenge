@@ -110,7 +110,9 @@ def raw_to_intermediate_shutdown(
     )
 
 
-def raw_to_intermediate_pc_price_eu(pc_price_eu: pd.DataFrame) -> None:
+def raw_to_intermediate_pc_price_eu(
+    pc_price_eu: pd.DataFrame, group_by_pc_types: bool
+) -> None:
     """Transforms the raw pc_price Europe dataset to intermediate format.
 
     This function cleans the column names of the raw dataframe, formats the date column
@@ -120,6 +122,7 @@ def raw_to_intermediate_pc_price_eu(pc_price_eu: pd.DataFrame) -> None:
 
     Args:
         pc_price_eu (pd.DataFrame): Raw pc_price Europe dataframe.
+        group_by_pc_types (bool): Whether to group by PC types to compute best prices.
     """
     # There are 2 date columns ("Date" and "date"), keep only the first one
     pc_price_eu = pc_price_eu.drop(columns=["date"])
@@ -159,66 +162,105 @@ def raw_to_intermediate_pc_price_eu(pc_price_eu: pd.DataFrame) -> None:
     logger.info(f"Dropping percentage columns: {pct_columns}")
     intermediate_df = intermediate_df.drop(columns=pct_columns, errors="ignore")
 
-    # Group by PC type and compute best price (minimum across suppliers) for each date
-    # and PC type
-    logger.info("Computing best prices for each PC type")
-    intermediate_df[intermediate_names.PC_EU_PC_CRYSTAL_BEST_PRICE] = intermediate_df[
-        raw_names.PC_EU_CRYSTAL_COLUMNS
-    ].min(axis=1)
+    if group_by_pc_types:
+        # Group by PC type and compute best price (minimum across suppliers)
+        # for each date and PC type
+        logger.info("Computing best prices for each PC type")
+        intermediate_df[intermediate_names.PC_EU_PC_CRYSTAL_BEST_PRICE] = (
+            intermediate_df[raw_names.PC_EU_CRYSTAL_COLUMNS].min(axis=1)
+        )
 
-    intermediate_df[intermediate_names.PC_EU_PC_WHITE_BEST_PRICE] = intermediate_df[
-        raw_names.PC_EU_WHITE_COLUMNS
-    ].min(axis=1)
+        intermediate_df[intermediate_names.PC_EU_PC_WHITE_BEST_PRICE] = intermediate_df[
+            raw_names.PC_EU_WHITE_COLUMNS
+        ].min(axis=1)
 
-    intermediate_df[intermediate_names.PC_EU_PC_GF10_BEST_PRICE] = intermediate_df[
-        raw_names.PC_EU_GF_10_COLUMNS
-    ].min(axis=1)
+        intermediate_df[intermediate_names.PC_EU_PC_GF10_BEST_PRICE] = intermediate_df[
+            raw_names.PC_EU_GF_10_COLUMNS
+        ].min(axis=1)
 
-    intermediate_df[intermediate_names.PC_EU_PC_GF20_BEST_PRICE] = intermediate_df[
-        raw_names.PC_EU_GF20_COLUMNS
-    ].min(axis=1)
+        intermediate_df[intermediate_names.PC_EU_PC_GF20_BEST_PRICE] = intermediate_df[
+            raw_names.PC_EU_GF20_COLUMNS
+        ].min(axis=1)
 
-    intermediate_df[intermediate_names.PC_EU_PC_RECYCLED_GF10_WHITE_BEST_PRICE] = (
-        intermediate_df[raw_names.PC_EU_RECYCLED_WHITE_COLUMNS].min(axis=1)
-    )
+        intermediate_df[intermediate_names.PC_EU_PC_RECYCLED_GF10_WHITE_BEST_PRICE] = (
+            intermediate_df[raw_names.PC_EU_RECYCLED_WHITE_COLUMNS].min(axis=1)
+        )
 
-    intermediate_df[intermediate_names.PC_EU_PC_RECYCLED_GF10_GREY_BEST_PRICE] = (
-        intermediate_df[raw_names.PC_EU_RECYCLED_GREY_COLUMNS].min(axis=1)
-    )
+        intermediate_df[intermediate_names.PC_EU_PC_RECYCLED_GF10_GREY_BEST_PRICE] = (
+            intermediate_df[raw_names.PC_EU_RECYCLED_GREY_COLUMNS].min(axis=1)
+        )
 
-    intermediate_df[intermediate_names.PC_EU_PC_SI_BEST_PRICE] = intermediate_df[
-        raw_names.PC_EU_SI_COLUMNS
-    ].min(axis=1)
+        intermediate_df[intermediate_names.PC_EU_PC_SI_BEST_PRICE] = intermediate_df[
+            raw_names.PC_EU_SI_COLUMNS
+        ].min(axis=1)
 
-    # Drop individual supplier columns to keep only best price columns
-    supplier_columns = [
-        col
-        for col in intermediate_df.columns
-        if col
-        not in [
-            raw_names.PC_EU_DATE,
-            intermediate_names.PC_EU_PC_CRYSTAL_BEST_PRICE,
-            intermediate_names.PC_EU_PC_WHITE_BEST_PRICE,
-            intermediate_names.PC_EU_PC_GF10_BEST_PRICE,
-            intermediate_names.PC_EU_PC_GF20_BEST_PRICE,
-            intermediate_names.PC_EU_PC_RECYCLED_GF10_WHITE_BEST_PRICE,
-            intermediate_names.PC_EU_PC_RECYCLED_GF10_GREY_BEST_PRICE,
-            intermediate_names.PC_EU_PC_SI_BEST_PRICE,
+        # Drop individual supplier columns to keep only best price columns
+        supplier_columns = [
+            col
+            for col in intermediate_df.columns
+            if col
+            not in [
+                raw_names.PC_EU_DATE,
+                intermediate_names.PC_EU_PC_CRYSTAL_BEST_PRICE,
+                intermediate_names.PC_EU_PC_WHITE_BEST_PRICE,
+                intermediate_names.PC_EU_PC_GF10_BEST_PRICE,
+                intermediate_names.PC_EU_PC_GF20_BEST_PRICE,
+                intermediate_names.PC_EU_PC_RECYCLED_GF10_WHITE_BEST_PRICE,
+                intermediate_names.PC_EU_PC_RECYCLED_GF10_GREY_BEST_PRICE,
+                intermediate_names.PC_EU_PC_SI_BEST_PRICE,
+            ]
+            + raw_names.PC_EU_REFERENCE_COLUMNS
+            + raw_names.PC_EU_SPREAD_COLUMNS
         ]
-        + raw_names.PC_EU_REFERENCE_COLUMNS
-        + raw_names.PC_EU_SPREAD_COLUMNS
-    ]
-    logger.info(f"Dropping individual supplier columns: {supplier_columns}")
-    intermediate_df = intermediate_df.drop(columns=supplier_columns, errors="ignore")
+        logger.info(f"Dropping individual supplier columns: {supplier_columns}")
+        intermediate_df = intermediate_df.drop(
+            columns=supplier_columns, errors="ignore"
+        )
+
+    else:
+        intermediate_df[intermediate_names.PC_EU_REGULAR_BEST_PRICE] = intermediate_df[
+            raw_names.PC_EU_REGULAR_COLUMNS
+        ].min(axis=1)
+        intermediate_df[intermediate_names.PC_EU_GREEN_BEST_PRICE] = intermediate_df[
+            raw_names.PC_EU_GREEN_COLUMNS
+        ].min(axis=1)
+
+        # Drop individual supplier columns to keep only best price columns
+        supplier_columns = [
+            col
+            for col in intermediate_df.columns
+            if col
+            not in [
+                raw_names.PC_EU_DATE,
+                intermediate_names.PC_EU_REGULAR_BEST_PRICE,
+                intermediate_names.PC_EU_GREEN_BEST_PRICE,
+            ]
+            + raw_names.PC_EU_REFERENCE_COLUMNS
+            + raw_names.PC_EU_SPREAD_COLUMNS
+        ]
+        logger.info(f"Dropping individual supplier columns: {supplier_columns}")
+        intermediate_df = intermediate_df.drop(
+            columns=supplier_columns, errors="ignore"
+        )
 
     # Save intermediate dataframe to CSV
-    logger.info(
-        "Saving intermediate pc_price Europe dataset at "
-        f"{pth.INTERMEDIATE_PC_PRICE_DIR / 'intermediate_pc_price_eu.csv'}"
-    )
-    intermediate_df.to_csv(
-        pth.INTERMEDIATE_PC_PRICE_DIR / "intermediate_pc_price_eu.csv", index=False
-    )
+    if group_by_pc_types:
+        logger.info(
+            "Saving intermediate pc_price Europe dataset (grouped by PC types) at "
+            f"{pth.INTERMEDIATE_PC_PRICE_DIR / 'intermediate_pc_price_eu_grouped.csv'}"
+        )
+        intermediate_df.to_csv(
+            pth.INTERMEDIATE_PC_PRICE_DIR / "intermediate_pc_price_eu_grouped.csv",
+            index=False,
+        )
+    else:
+        logger.info(
+            "Saving intermediate pc_price Europe dataset at "
+            f"{pth.INTERMEDIATE_PC_PRICE_DIR / 'intermediate_pc_price_eu.csv'}"
+        )
+        intermediate_df.to_csv(
+            pth.INTERMEDIATE_PC_PRICE_DIR / "intermediate_pc_price_eu.csv", index=False
+        )
 
 
 def raw_to_intermediate_pc_price_asia(
@@ -490,8 +532,13 @@ def raw_to_intermediate_automobile_industry(auto_df: pd.DataFrame) -> None:
     intermediate_df.to_csv(output_path, index=False)
 
 
-def raw_to_intermediate() -> None:
-    """Runs all raw to intermediate data pipelines."""
+def raw_to_intermediate(group_by_pc_types: bool) -> None:
+    """Runs all raw to intermediate data pipelines.
+
+    Args:
+        group_by_pc_types (bool): Whether to group PC prices by type when processing
+            the pc_price datasets.
+    """
     # phenol_acetone_capacity_loss datasets
     logger.info(
         "Reading raw phenol capacity loss dataset at "
@@ -518,7 +565,9 @@ def raw_to_intermediate() -> None:
         f"{pth.RAW_PC_PRICE_DIR / 'pc_price_eu.csv'}"
     )
     raw_pc_price_eu = pd.read_csv(pth.RAW_PC_PRICE_DIR / "pc_price_eu.csv")
-    raw_to_intermediate_pc_price_eu(raw_pc_price_eu)
+    raw_to_intermediate_pc_price_eu(
+        raw_pc_price_eu, group_by_pc_types=group_by_pc_types
+    )
     logger.info("Completed processing raw to intermediate pc_price Europe dataset")
 
     # Create conversion rates dataframe for Asia dataset
@@ -610,5 +659,6 @@ def raw_to_intermediate() -> None:
 
 if __name__ == "__main__":
     logger.info("Starting raw to intermediate data pipelines")
-    raw_to_intermediate()
+    raw_to_intermediate(group_by_pc_types=False)
+    raw_to_intermediate(group_by_pc_types=True)
     logger.info("Completed all raw to intermediate data pipelines")
