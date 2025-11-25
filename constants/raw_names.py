@@ -1,5 +1,7 @@
 # Column names for raw data files
 
+import constants.constants as cst
+
 ########################## phenol_acetone_capacity_loss ##########################
 
 # Phenol dataset
@@ -189,8 +191,6 @@ PC_ASIA_SPREAD_COLUMNS = [
 PC_ASIA_SUPPLIER_1_GP_RMB_T = "asia_supplier_1 pc gp (rmb/t)"
 PC_ASIA_SUPPLIER_2_GP_RMB_T = "asia_supplier_2 pc gp (rmb/t)"
 PC_ASIA_SUPPLIER_3_GP_RMB_KG = "asia_supplier_3 pc gp (rmb/kg)"
-
-# Asia dataset - PC GP suppliers (USD/KG)
 PC_ASIA_SUPPLIER_1_GP_USD_KG = "asia_supplier_1 pc gp (usd/kg)"
 PC_ASIA_SUPPLIER_2_GP_USD_KG = "asia_supplier_2 pc gp (usd/kg)"
 PC_ASIA_SUPPLIER_2_GP_USD_KG_ALT = "asia_supplier_2 pc gp (usd/kg).1"
@@ -217,7 +217,6 @@ PC_ASIA_SUPPLIER_5_FR_USD_KG = "asia_supplier_5  pc fr usd/kg"
 # Asia dataset - PC GF/GF10FR suppliers
 PC_ASIA_SUPPLIER_1_GF_RMB_T = "asia_supplier_1  pc gf (rmb/t)"
 PC_ASIA_SUPPLIER_2_GF10FR_RMB_T = "asia_supplier_2  pc gf10fr (rmb/t)"
-PC_ASIA_SUPPLIER_1_GF_RECYCLED_RMB_T = "asia_supplier_1  pc gf recycled (rmb/t)"
 PC_ASIA_SUPPLIER_5_GF = "asia_supplier_5 pc gf"
 PC_ASIA_SUPPLIER_1_GF_USD_KG = "asia_supplier_1 pc gf (usd/kg)"
 PC_ASIA_SUPPLIER_1_GF_USD_KG_ALT = "asia_supplier_1 pc gf (usd/kg).1"
@@ -227,6 +226,9 @@ PC_ASIA_SUPPLIER_2_GF_INR_KG = "asia_supplier_2 pc gf (inr/kg)"
 PC_ASIA_SUPPLIER_7_GF_FR = "asia_supplier_7 pc gf fr"
 PC_ASIA_GF10_20_FR_CHINA_CNY = "pc gf10_20 fr _ china _  cnyperton"
 
+# Asia dataset - PC GF Recycled suppliers
+PC_ASIA_SUPPLIER_1_GF_RECYCLED_RMB_T = "asia_supplier_1  pc gf recycled (rmb/t)"
+
 # Asia dataset - PC NAT suppliers
 PC_ASIA_SUPPLIER_1_NAT = "asia_supplier_1 pc nat"
 PC_ASIA_SUPPLIER_2_NAT = "asia_supplier_2 pc nat"
@@ -234,6 +236,8 @@ PC_ASIA_SUPPLIER_2_NAT = "asia_supplier_2 pc nat"
 # Asia dataset - PC Si/Siloxane suppliers
 PC_ASIA_SI_INR_KG = "pc si (inr/kg)"
 PC_ASIA_SI_RMB_KG = "pc si (rmb/kg)"
+
+# Asia dataset - PC Si Recycled suppliers
 PC_ASIA_SI_RECYCLED_RMB_KG = "pc si recycled (rmb/kg)"
 PC_ASIA_SUPPLIER_5_SI_RECYCLED_RMB_KG = "asia_supplier_5 pc si recycled (rmb/kg)"
 
@@ -282,6 +286,58 @@ PC_ASIA_PRICE_COLUMNS = [
     PC_ASIA_SUPPLIER_5_SI_RECYCLED_RMB_KG,
     PC_ASIA_SUPPLIER_4_USD_KG,
 ]
+
+# Raw price columns units
+PC_ASIA_PRICE_COLUMNS_UNITS = {
+    # PC GP
+    PC_ASIA_SUPPLIER_1_GP_RMB_T: cst.RMB_T,
+    PC_ASIA_SUPPLIER_2_GP_RMB_T: cst.RMB_T,
+    PC_ASIA_SUPPLIER_3_GP_RMB_KG: cst.RMB_T,
+    PC_ASIA_SUPPLIER_1_GP_USD_KG: cst.USD_KG,
+    PC_ASIA_SUPPLIER_2_GP_USD_KG: cst.USD_KG,
+    PC_ASIA_SUPPLIER_2_GP_USD_KG_ALT: cst.USD_KG,
+    PC_ASIA_SUPPLIER_1_GP_NO_UNIT: cst.USD_KG,
+    PC_ASIA_SUPPLIER_7_GP: cst.INR_KG,
+    # PC GP Recycled
+    PC_ASIA_SUPPLIER_1_GP_RECYCLED_RMB_T: cst.RMB_T,
+    PC_ASIA_SUPPLIER_2_GP_RECYCLED_RMB_T: cst.RMB_T,
+    PC_ASIA_SUPPLIER_3_GP_RECYCLED_RMB_T: cst.RMB_T,
+    PC_ASIA_SUPPLIER_4_GP_RECYCLED_RMB_T: cst.RMB_T,
+    PC_ASIA_SUPPLIER_1_GP_RECYCLED_USD_KG: cst.USD_KG,
+    # PC FR
+    PC_ASIA_SUPPLIER_1_FR: cst.RMB_KG,
+    PC_ASIA_SUPPLIER_2_FR: cst.RMB_KG,
+    PC_ASIA_SUPPLIER_4_FR: cst.RMB_KG,
+    PC_ASIA_SUPPLIER_5_FR: cst.RMB_KG,
+    PC_ASIA_SUPPLIER_1_FR_USD_KG: cst.USD_KG,
+    PC_ASIA_SUPPLIER_2_FR_USD_KG: cst.USD_KG,
+    PC_ASIA_SUPPLIER_2_FR_USD_KG_ALT: cst.USD_KG,
+    PC_ASIA_SUPPLIER_5_FR_USD_KG: cst.USD_KG,
+    # PC GF / GF1020 / GF10FR / GFFR
+    PC_ASIA_SUPPLIER_1_GF_RMB_T: cst.RMB_T,
+    PC_ASIA_SUPPLIER_2_GF10FR_RMB_T: cst.RMB_T,
+    PC_ASIA_SUPPLIER_5_GF: cst.RMB_T,
+    PC_ASIA_SUPPLIER_1_GF_USD_KG: cst.USD_T,
+    PC_ASIA_SUPPLIER_1_GF_USD_KG_ALT: cst.USD_KG,
+    PC_ASIA_SUPPLIER_1_GF_INR_KG: cst.INR_KG,
+    PC_ASIA_SUPPLIER_1_GF_INR_KG_ALT: cst.INR_KG,
+    PC_ASIA_SUPPLIER_2_GF_INR_KG: cst.INR_KG,
+    PC_ASIA_SUPPLIER_7_GF_FR: cst.INR_KG,
+    PC_ASIA_GF10_20_FR_CHINA_CNY: cst.RMB_T,
+    # PC GF Recycled
+    PC_ASIA_SUPPLIER_1_GF_RECYCLED_RMB_T: cst.RMB_KG,
+    # PC NAT
+    PC_ASIA_SUPPLIER_1_NAT: cst.USD_KG,
+    PC_ASIA_SUPPLIER_2_NAT: cst.USD_KG,
+    # PC SI
+    PC_ASIA_SI_INR_KG: cst.INR_KG,
+    PC_ASIA_SI_RMB_KG: cst.RMB_KG,
+    # PC SI Recycled
+    PC_ASIA_SI_RECYCLED_RMB_KG: cst.RMB_KG,
+    PC_ASIA_SUPPLIER_5_SI_RECYCLED_RMB_KG: cst.RMB_KG,
+    # Unknown PC type
+    PC_ASIA_SUPPLIER_4_USD_KG: cst.USD_KG,
+}
 
 
 ########################## Conversion Rates ##########################
