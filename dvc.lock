@@ -65,10 +65,18 @@ stages:
       hash: md5
       md5: c7a93b792d7d74fb357f61cf68c25d0c
       size: 19506
+    - path: data/intermediate/pc_price/intermediate_pc_price_asia_grouped.csv
+      hash: md5
+      md5: afcafa30b27e8e97f078c6b3b583884f
+      size: 23962
     - path: data/intermediate/pc_price/intermediate_pc_price_eu.csv
       hash: md5
       md5: b23bc5490c986dfb436aa3d2c7b45c1f
       size: 21635
+    - path: data/intermediate/pc_price/intermediate_pc_price_eu_grouped.csv
+      hash: md5
+      md5: 786d8e093ddc2125373c2d13e600dea4
+      size: 27852
     - path:
         data/intermediate/phenol_acetone_capacity_loss/intermediate_bpa_capacity_loss.csv
       hash: md5
@@ -78,3 +86,113 @@ stages:
       hash: md5
       md5: 0fc38f202d6f9f4abd18d716355cbf78
       size: 5220
+  intermediate_to_processed_uni:
+    cmd: uv run python3 src/data_pipelines/uni_intermediate_to_processed.py
+    deps:
+    - path:
+        data/intermediate/automobile_industry/intermediate_automobile_industry.csv
+      hash: md5
+      md5: 4be9e7f02b074f60f8d65a6eb946f8bd
+      size: 8645
+    - path:
+        data/intermediate/electricity_price/intermediate_european_wholesale_electricity_price.csv
+      hash: md5
+      md5: f63adaaa87b8041fab70969b730908ab
+      size: 8516
+    - path: data/intermediate/pc_price/intermediate_pc_price_asia.csv
+      hash: md5
+      md5: c7a93b792d7d74fb357f61cf68c25d0c
+      size: 19506
+    - path: data/intermediate/pc_price/intermediate_pc_price_asia_grouped.csv
+      hash: md5
+      md5: afcafa30b27e8e97f078c6b3b583884f
+      size: 23962
+    - path: data/intermediate/pc_price/intermediate_pc_price_eu.csv
+      hash: md5
+      md5: b23bc5490c986dfb436aa3d2c7b45c1f
+      size: 21635
+    - path: data/intermediate/pc_price/intermediate_pc_price_eu_grouped.csv
+      hash: md5
+      md5: 786d8e093ddc2125373c2d13e600dea4
+      size: 27852
+    - path:
+        data/intermediate/phenol_acetone_capacity_loss/intermediate_bpa_capacity_loss.csv
+      hash: md5
+      md5: b5e3d80dc4785cf0872788e670ed71f5
+      size: 1766
+    - path: data/intermediate/shutdown/intermediate_shutdown_capacity_loss.csv
+      hash: md5
+      md5: 0fc38f202d6f9f4abd18d716355cbf78
+      size: 5220
+    - path: src/data_pipelines/uni_intermediate_to_processed.py
+      hash: md5
+      md5: 9be71a6dc256de34edf14d7005e264f1
+      size: 6310
+    outs:
+    - path: data/processed/uni_3m.csv
+      hash: md5
+      md5: 6ab43a6b5e1066cf8fcac937115c9270
+      size: 363190
+    - path: data/processed/uni_6m.csv
+      hash: md5
+      md5: f88fb1646bb50c00154ce5b9ff50d45b
+      size: 362220
+    - path: data/processed/uni_9m.csv
+      hash: md5
+      md5: 2e256f8f6d6e8567570cfaa02c7df682
+      size: 374994
+  intermediate_to_processed_multi:
+    cmd: uv run python3 src/data_pipelines/multi_intermediate_to_processed.py
+    deps:
+    - path:
+        data/intermediate/automobile_industry/intermediate_automobile_industry.csv
+      hash: md5
+      md5: 4be9e7f02b074f60f8d65a6eb946f8bd
+      size: 8645
+    - path:
+        data/intermediate/electricity_price/intermediate_european_wholesale_electricity_price.csv
+      hash: md5
+      md5: f63adaaa87b8041fab70969b730908ab
+      size: 8516
+    - path: data/intermediate/pc_price/intermediate_pc_price_asia.csv
+      hash: md5
+      md5: c7a93b792d7d74fb357f61cf68c25d0c
+      size: 19506
+    - path: data/intermediate/pc_price/intermediate_pc_price_asia_grouped.csv
+      hash: md5
+      md5: afcafa30b27e8e97f078c6b3b583884f
+      size: 23962
+    - path: data/intermediate/pc_price/intermediate_pc_price_eu.csv
+      hash: md5
+      md5: b23bc5490c986dfb436aa3d2c7b45c1f
+      size: 21635
+    - path: data/intermediate/pc_price/intermediate_pc_price_eu_grouped.csv
+      hash: md5
+      md5: 786d8e093ddc2125373c2d13e600dea4
+      size: 27852
+    - path:
+        data/intermediate/phenol_acetone_capacity_loss/intermediate_bpa_capacity_loss.csv
+      hash: md5
+      md5: b5e3d80dc4785cf0872788e670ed71f5
+      size: 1766
+    - path: data/intermediate/shutdown/intermediate_shutdown_capacity_loss.csv
+      hash: md5
+      md5: 0fc38f202d6f9f4abd18d716355cbf78
+      size: 5220
+    - path: src/data_pipelines/multi_intermediate_to_processed.py
+      hash: md5
+      md5: bfbb8b3204367dd97387ac04ff594f48
+      size: 6453
+    outs:
+    - path: data/processed/multi_3m.csv
+      hash: md5
+      md5: 73c2dfe0290ab0e87b1b3ba4cf74c160
+      size: 282185
+    - path: data/processed/multi_6m.csv
+      hash: md5
+      md5: c9fd8ca134ea550295cb8683d3e01254
+      size: 281554
+    - path: data/processed/multi_9m.csv
+      hash: md5
+      md5: ac1d431b44c9c2b99be3a60f4868be76
+      size: 292828

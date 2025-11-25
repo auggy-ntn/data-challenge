@@ -10,7 +10,9 @@ import src.utils.feature_engineering as fe_utils
 
 
 def build_multivariate_dataset(
-    horizon: int, include_exogenous: bool = True
+    horizon: int,
+    group_by_pc_types: bool,
+    include_exogenous: bool = True,
 ) -> pd.DataFrame:
     """Complete pipeline for multivariate modeling.
 
@@ -19,6 +21,7 @@ def build_multivariate_dataset(
 
     Args:
         horizon: Forecast horizon in months (3, 6, or 9)
+        group_by_pc_types: Whether PC prices are grouped by pc_types
         include_exogenous: Whether to add exogenous variables
 
     Returns:
@@ -35,7 +38,7 @@ def build_multivariate_dataset(
         - Exogenous features: electricity, capacity loss, shutdowns, exchange rates
     """
     # 1. Create base long format dataset
-    long_df = fe_utils.create_long_format()
+    long_df = fe_utils.create_long_format(group_by_pc_types=group_by_pc_types)
 
     # 2. Date column
     date_col = processed_names.LONG_DATE
@@ -151,10 +154,20 @@ def build_multivariate_dataset(
 
 
 if __name__ == "__main__":
-    df_3m = build_multivariate_dataset(horizon=3)
-    df_6m = build_multivariate_dataset(horizon=6)
-    df_9m = build_multivariate_dataset(horizon=9)
+    # Multivariate datasets without grouping by pc_types
+    df_3m = build_multivariate_dataset(horizon=3, group_by_pc_types=False)
+    df_6m = build_multivariate_dataset(horizon=6, group_by_pc_types=False)
+    df_9m = build_multivariate_dataset(horizon=9, group_by_pc_types=False)
 
     df_3m.to_csv(pth.PROCESSED_DATA_DIR / "multi_3m.csv", index=False)
     df_6m.to_csv(pth.PROCESSED_DATA_DIR / "multi_6m.csv", index=False)
     df_9m.to_csv(pth.PROCESSED_DATA_DIR / "multi_9m.csv", index=False)
+
+    # Multivariate datasets with PC prices grouped by pc_types
+    df_3m_grouped = build_multivariate_dataset(horizon=3, group_by_pc_types=True)
+    df_6m_grouped = build_multivariate_dataset(horizon=6, group_by_pc_types=True)
+    df_9m_grouped = build_multivariate_dataset(horizon=9, group_by_pc_types=True)
+
+    df_3m_grouped.to_csv(pth.PROCESSED_DATA_DIR / "multi_3m_grouped.csv", index=False)
+    df_6m_grouped.to_csv(pth.PROCESSED_DATA_DIR / "multi_6m_grouped.csv", index=False)
+    df_9m_grouped.to_csv(pth.PROCESSED_DATA_DIR / "multi_9m_grouped.csv", index=False)

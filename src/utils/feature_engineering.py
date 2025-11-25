@@ -16,21 +16,33 @@ from constants.paths import (
 ############################ Univariate Feature Engineering ############################
 
 
-def create_wide_format() -> pd.DataFrame:
+def create_wide_format(group_by_pc_types: bool) -> pd.DataFrame:
     """Creates a wide format dataset with all the features for each PC type.
 
     In this dataset, there is one column per PC type and one column per feature
     engineered for that PC type.
 
+    Args:
+        group_by_pc_types: Whether PC prices are grouped by pc_types
+
     Returns:
         pd.DataFrame: The wide format dataset.
     """
     # Merge EU and Asia PC price datasets
-    eu_renamed = pd.read_csv(INTERMEDIATE_PC_PRICE_DIR / "intermediate_pc_price_eu.csv")
-    asia_renamed = pd.read_csv(
-        INTERMEDIATE_PC_PRICE_DIR / "intermediate_pc_price_asia.csv"
-    )
-
+    if group_by_pc_types:
+        eu_renamed = pd.read_csv(
+            INTERMEDIATE_PC_PRICE_DIR / "intermediate_pc_price_eu_grouped.csv"
+        )
+        asia_renamed = pd.read_csv(
+            INTERMEDIATE_PC_PRICE_DIR / "intermediate_pc_price_asia_grouped.csv"
+        )
+    else:
+        eu_renamed = pd.read_csv(
+            INTERMEDIATE_PC_PRICE_DIR / "intermediate_pc_price_eu.csv"
+        )
+        asia_renamed = pd.read_csv(
+            INTERMEDIATE_PC_PRICE_DIR / "intermediate_pc_price_asia.csv"
+        )
     eu_renamed[intermediate_names.PC_EU_DATE] = pd.to_datetime(
         eu_renamed[intermediate_names.PC_EU_DATE], format=cst.DATE_FORMAT
     )
@@ -317,18 +329,31 @@ def uni_add_time_features(
 ########################### Multivariate Feature Engineering ###########################
 
 
-def create_long_format() -> pd.DataFrame:
+def create_long_format(group_by_pc_types: bool) -> pd.DataFrame:
     """Creates a long format dataset suitable for multivariate global modeling.
 
     In this dataset, each row corresponds to a specific date and PC type,with associated
     features. Thus one date will have multiple rows, one for each PC type.
 
+    Args:
+        group_by_pc_types: Whether PC prices are grouped by pc_types
+
     Returns:
         pd.DataFrame: The long format dataset.
     """
     ## PC prices
-    eu_df = pd.read_csv(INTERMEDIATE_PC_PRICE_DIR / "intermediate_pc_price_eu.csv")
-    asia_df = pd.read_csv(INTERMEDIATE_PC_PRICE_DIR / "intermediate_pc_price_asia.csv")
+    if group_by_pc_types:
+        eu_df = pd.read_csv(
+            INTERMEDIATE_PC_PRICE_DIR / "intermediate_pc_price_eu_grouped.csv"
+        )
+        asia_df = pd.read_csv(
+            INTERMEDIATE_PC_PRICE_DIR / "intermediate_pc_price_asia_grouped.csv"
+        )
+    else:
+        eu_df = pd.read_csv(INTERMEDIATE_PC_PRICE_DIR / "intermediate_pc_price_eu.csv")
+        asia_df = pd.read_csv(
+            INTERMEDIATE_PC_PRICE_DIR / "intermediate_pc_price_asia.csv"
+        )
 
     eu_df[intermediate_names.PC_EU_DATE] = pd.to_datetime(
         eu_df[intermediate_names.PC_EU_DATE], format=cst.DATE_FORMAT
