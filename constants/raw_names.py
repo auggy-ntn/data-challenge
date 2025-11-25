@@ -1,5 +1,7 @@
 # Column names for raw data files
 
+import constants.constants as cst
+
 ########################## phenol_acetone_capacity_loss ##########################
 
 # Phenol dataset
@@ -121,6 +123,16 @@ PC_EU_SI_COLUMNS = [
     PC_EU_SUPPLIER_7_SI,
 ]
 
+# Europe dataset - Regular and Green columns
+PC_EU_REGULAR_COLUMNS = (
+    PC_EU_CRYSTAL_COLUMNS
+    + PC_EU_WHITE_COLUMNS
+    + PC_EU_GF_10_COLUMNS
+    + PC_EU_GF20_COLUMNS
+    + PC_EU_SI_COLUMNS
+)
+PC_EU_GREEN_COLUMNS = PC_EU_RECYCLED_WHITE_COLUMNS + PC_EU_RECYCLED_GREY_COLUMNS
+
 # Legacy/reference columns
 PC_EU_PIE = "pc pie"
 PC_EU_PIE_NORM = "pc pie normalized"
@@ -179,8 +191,6 @@ PC_ASIA_SPREAD_COLUMNS = [
 PC_ASIA_SUPPLIER_1_GP_RMB_T = "asia_supplier_1 pc gp (rmb/t)"
 PC_ASIA_SUPPLIER_2_GP_RMB_T = "asia_supplier_2 pc gp (rmb/t)"
 PC_ASIA_SUPPLIER_3_GP_RMB_KG = "asia_supplier_3 pc gp (rmb/kg)"
-
-# Asia dataset - PC GP suppliers (USD/KG)
 PC_ASIA_SUPPLIER_1_GP_USD_KG = "asia_supplier_1 pc gp (usd/kg)"
 PC_ASIA_SUPPLIER_2_GP_USD_KG = "asia_supplier_2 pc gp (usd/kg)"
 PC_ASIA_SUPPLIER_2_GP_USD_KG_ALT = "asia_supplier_2 pc gp (usd/kg).1"
@@ -207,7 +217,6 @@ PC_ASIA_SUPPLIER_5_FR_USD_KG = "asia_supplier_5  pc fr usd/kg"
 # Asia dataset - PC GF/GF10FR suppliers
 PC_ASIA_SUPPLIER_1_GF_RMB_T = "asia_supplier_1  pc gf (rmb/t)"
 PC_ASIA_SUPPLIER_2_GF10FR_RMB_T = "asia_supplier_2  pc gf10fr (rmb/t)"
-PC_ASIA_SUPPLIER_1_GF_RECYCLED_RMB_T = "asia_supplier_1  pc gf recycled (rmb/t)"
 PC_ASIA_SUPPLIER_5_GF = "asia_supplier_5 pc gf"
 PC_ASIA_SUPPLIER_1_GF_USD_KG = "asia_supplier_1 pc gf (usd/kg)"
 PC_ASIA_SUPPLIER_1_GF_USD_KG_ALT = "asia_supplier_1 pc gf (usd/kg).1"
@@ -217,6 +226,9 @@ PC_ASIA_SUPPLIER_2_GF_INR_KG = "asia_supplier_2 pc gf (inr/kg)"
 PC_ASIA_SUPPLIER_7_GF_FR = "asia_supplier_7 pc gf fr"
 PC_ASIA_GF10_20_FR_CHINA_CNY = "pc gf10_20 fr _ china _  cnyperton"
 
+# Asia dataset - PC GF Recycled suppliers
+PC_ASIA_SUPPLIER_1_GF_RECYCLED_RMB_T = "asia_supplier_1  pc gf recycled (rmb/t)"
+
 # Asia dataset - PC NAT suppliers
 PC_ASIA_SUPPLIER_1_NAT = "asia_supplier_1 pc nat"
 PC_ASIA_SUPPLIER_2_NAT = "asia_supplier_2 pc nat"
@@ -224,6 +236,8 @@ PC_ASIA_SUPPLIER_2_NAT = "asia_supplier_2 pc nat"
 # Asia dataset - PC Si/Siloxane suppliers
 PC_ASIA_SI_INR_KG = "pc si (inr/kg)"
 PC_ASIA_SI_RMB_KG = "pc si (rmb/kg)"
+
+# Asia dataset - PC Si Recycled suppliers
 PC_ASIA_SI_RECYCLED_RMB_KG = "pc si recycled (rmb/kg)"
 PC_ASIA_SUPPLIER_5_SI_RECYCLED_RMB_KG = "asia_supplier_5 pc si recycled (rmb/kg)"
 
@@ -272,6 +286,139 @@ PC_ASIA_PRICE_COLUMNS = [
     PC_ASIA_SUPPLIER_5_SI_RECYCLED_RMB_KG,
     PC_ASIA_SUPPLIER_4_USD_KG,
 ]
+
+# Raw price columns units
+PC_ASIA_PRICE_COLUMNS_UNITS = {
+    # PC GP
+    PC_ASIA_SUPPLIER_1_GP_RMB_T: cst.RMB_T,
+    PC_ASIA_SUPPLIER_2_GP_RMB_T: cst.RMB_T,
+    PC_ASIA_SUPPLIER_3_GP_RMB_KG: cst.RMB_T,
+    PC_ASIA_SUPPLIER_1_GP_USD_KG: cst.USD_KG,
+    PC_ASIA_SUPPLIER_2_GP_USD_KG: cst.USD_KG,
+    PC_ASIA_SUPPLIER_2_GP_USD_KG_ALT: cst.USD_KG,
+    PC_ASIA_SUPPLIER_1_GP_NO_UNIT: cst.USD_KG,
+    PC_ASIA_SUPPLIER_7_GP: cst.INR_KG,
+    # PC GP Recycled
+    PC_ASIA_SUPPLIER_1_GP_RECYCLED_RMB_T: cst.RMB_T,
+    PC_ASIA_SUPPLIER_2_GP_RECYCLED_RMB_T: cst.RMB_T,
+    PC_ASIA_SUPPLIER_3_GP_RECYCLED_RMB_T: cst.RMB_T,
+    PC_ASIA_SUPPLIER_4_GP_RECYCLED_RMB_T: cst.RMB_T,
+    PC_ASIA_SUPPLIER_1_GP_RECYCLED_USD_KG: cst.USD_KG,
+    # PC FR
+    PC_ASIA_SUPPLIER_1_FR: cst.RMB_KG,
+    PC_ASIA_SUPPLIER_2_FR: cst.RMB_KG,
+    PC_ASIA_SUPPLIER_4_FR: cst.RMB_KG,
+    PC_ASIA_SUPPLIER_5_FR: cst.RMB_KG,
+    PC_ASIA_SUPPLIER_1_FR_USD_KG: cst.USD_KG,
+    PC_ASIA_SUPPLIER_2_FR_USD_KG: cst.USD_KG,
+    PC_ASIA_SUPPLIER_2_FR_USD_KG_ALT: cst.USD_KG,
+    PC_ASIA_SUPPLIER_5_FR_USD_KG: cst.USD_KG,
+    # PC GF / GF1020 / GF10FR / GFFR
+    PC_ASIA_SUPPLIER_1_GF_RMB_T: cst.RMB_T,
+    PC_ASIA_SUPPLIER_2_GF10FR_RMB_T: cst.RMB_T,
+    PC_ASIA_SUPPLIER_5_GF: cst.RMB_T,
+    PC_ASIA_SUPPLIER_1_GF_USD_KG: cst.USD_T,
+    PC_ASIA_SUPPLIER_1_GF_USD_KG_ALT: cst.USD_KG,
+    PC_ASIA_SUPPLIER_1_GF_INR_KG: cst.INR_KG,
+    PC_ASIA_SUPPLIER_1_GF_INR_KG_ALT: cst.INR_KG,
+    PC_ASIA_SUPPLIER_2_GF_INR_KG: cst.INR_KG,
+    PC_ASIA_SUPPLIER_7_GF_FR: cst.INR_KG,
+    PC_ASIA_GF10_20_FR_CHINA_CNY: cst.RMB_T,
+    # PC GF Recycled
+    PC_ASIA_SUPPLIER_1_GF_RECYCLED_RMB_T: cst.RMB_KG,
+    # PC NAT
+    PC_ASIA_SUPPLIER_1_NAT: cst.USD_KG,
+    PC_ASIA_SUPPLIER_2_NAT: cst.USD_KG,
+    # PC SI
+    PC_ASIA_SI_INR_KG: cst.INR_KG,
+    PC_ASIA_SI_RMB_KG: cst.RMB_KG,
+    # PC SI Recycled
+    PC_ASIA_SI_RECYCLED_RMB_KG: cst.RMB_KG,
+    PC_ASIA_SUPPLIER_5_SI_RECYCLED_RMB_KG: cst.RMB_KG,
+    # Unknown PC type
+    PC_ASIA_SUPPLIER_4_USD_KG: cst.USD_KG,
+}
+
+# Converted names
+PC_ASIA_CONVERTED_SUPPLIER_1_PC_FR = "asia_supplier_1 pc fr (usd/kg)"
+PC_ASIA_CONVERTED_SUPPLIER_2_PC_FR = "asia_supplier_2 pc fr (usd/kg)"
+PC_ASIA_CONVERTED_SUPPLIER_4_PC_FR = "asia_supplier_4 pc fr (usd/kg)"
+PC_ASIA_CONVERTED_SUPPLIER_5_PC_FR = "asia_supplier_5 pc fr (usd/kg)"
+PC_ASIA_CONVERTED_FR_COLUMNS = [
+    PC_ASIA_CONVERTED_SUPPLIER_1_PC_FR,
+    PC_ASIA_CONVERTED_SUPPLIER_2_PC_FR,
+    PC_ASIA_CONVERTED_SUPPLIER_4_PC_FR,
+    PC_ASIA_CONVERTED_SUPPLIER_5_PC_FR,
+]
+
+PC_ASIA_CONVERTED_SUPPLIER_1_PC_GF = "asia_supplier_1 pc gf (usd/kg)"
+PC_ASIA_CONVERTED_SUPPLIER_2_PC_GF = "asia_supplier_2 pc gf (usd/kg)"
+PC_ASIA_CONVERTED_SUPPLIER_5_PC_GF = "asia_supplier_5 pc gf (usd/kg)"
+PC_ASIA_CONVERTED_SUPPLIER_7_PC_GF = "asia_supplier_7 pc gf (usd/kg)"
+PC_ASIA_CONVERTED_SUPPLIER_2_PC_GF10FR = "asia_supplier_2 pc gf10fr (usd/kg)"
+PC_ASIA_CONVERTED_GF_COLUMNS = [
+    PC_ASIA_CONVERTED_SUPPLIER_1_PC_GF,
+    PC_ASIA_CONVERTED_SUPPLIER_2_PC_GF,
+    PC_ASIA_CONVERTED_SUPPLIER_5_PC_GF,
+    PC_ASIA_CONVERTED_SUPPLIER_7_PC_GF,
+    PC_ASIA_CONVERTED_SUPPLIER_2_PC_GF10FR,
+]
+
+PC_ASIA_CONVERTED_SUPPLIER_1_PC_GP = "asia_supplier_1 pc gp (usd/kg)"
+PC_ASIA_CONVERTED_SUPPLIER_2_PC_GP = "asia_supplier_2 pc gp (usd/kg)"
+PC_ASIA_CONVERTED_SUPPLIER_3_PC_GP = "asia_supplier_3 pc gp (usd/kg)"
+PC_ASIA_CONVERTED_SUPPLIER_7_PC_GP = "asia_supplier_7 pc gp (usd/kg)"
+PC_ASIA_CONVERTED_GP_COLUMNS = [
+    PC_ASIA_CONVERTED_SUPPLIER_1_PC_GP,
+    PC_ASIA_CONVERTED_SUPPLIER_2_PC_GP,
+    PC_ASIA_CONVERTED_SUPPLIER_3_PC_GP,
+    PC_ASIA_CONVERTED_SUPPLIER_7_PC_GP,
+]
+
+PC_ASIA_CONVERTED_SUPPLIER_1_PC_GF_RECYCLED = "asia_supplier_1 pc gf recycled (usd/kg)"
+PC_ASIA_CONVERTED_GF_RECYCLED_COLUMNS = [PC_ASIA_CONVERTED_SUPPLIER_1_PC_GF_RECYCLED]
+
+PC_ASIA_CONVERTED_SUPPLIER_1_PC_GP_RECYCLED = "asia_supplier_1 pc gp recycled (usd/kg)"
+PC_ASIA_CONVERTED_SUPPLIER_2_PC_GP_RECYCLED = "asia_supplier_2 pc gp recycled (usd/kg)"
+PC_ASIA_CONVERTED_SUPPLIER_3_PC_GP_RECYCLED = "asia_supplier_3 pc gp recycled (usd/kg)"
+PC_ASIA_CONVERTED_SUPPLIER_4_PC_GP_RECYCLED = "asia_supplier_4 pc gp recycled (usd/kg)"
+PC_ASIA_CONVERTED_GP_RECYCLED_COLUMNS = [
+    PC_ASIA_CONVERTED_SUPPLIER_1_PC_GP_RECYCLED,
+    PC_ASIA_CONVERTED_SUPPLIER_2_PC_GP_RECYCLED,
+    PC_ASIA_CONVERTED_SUPPLIER_3_PC_GP_RECYCLED,
+    PC_ASIA_CONVERTED_SUPPLIER_4_PC_GP_RECYCLED,
+]
+
+PC_ASIA_CONVERTED_PC_SI = "pc si (usd/kg)"
+PC_ASIA_CONVERTED_SI_COLUMNS = [PC_ASIA_CONVERTED_PC_SI]
+
+PC_ASIA_CONVERTED_SUPPLIER_1_PC_NAT = "asia_supplier_1 pc nat (usd/kg)"
+PC_ASIA_CONVERTED_SUPPLIER_2_PC_NAT = "asia_supplier_2 pc nat (usd/kg)"
+PC_ASIA_CONVERTED_NAT_COLUMNS = [
+    PC_ASIA_CONVERTED_SUPPLIER_1_PC_NAT,
+    PC_ASIA_CONVERTED_SUPPLIER_2_PC_NAT,
+]
+
+PC_ASIA_CONVERTED_SUPPLIER_5_PC_SI_RECYCLED = "asia_supplier_5 pc si recycled (usd/kg)"
+PC_ASIA_CONVERTED_PC_SI_RECYCLED = "pc si recycled (usd/kg)"
+PC_ASIA_CONVERTED_SI_RECYCLED_COLUMNS = [
+    PC_ASIA_CONVERTED_SUPPLIER_5_PC_SI_RECYCLED,
+    PC_ASIA_CONVERTED_PC_SI_RECYCLED,
+]
+
+# PC Asia converted Green and Regular columns
+PC_ASIA_CONVERTED_REGULAR_COLUMNS = (
+    PC_ASIA_CONVERTED_GP_COLUMNS
+    + PC_ASIA_CONVERTED_FR_COLUMNS
+    + PC_ASIA_CONVERTED_GF_COLUMNS
+    + PC_ASIA_CONVERTED_NAT_COLUMNS
+    + PC_ASIA_CONVERTED_SI_COLUMNS
+)
+PC_ASIA_CONVERTED_GREEN_COLUMNS = (
+    PC_ASIA_CONVERTED_GP_RECYCLED_COLUMNS
+    + PC_ASIA_CONVERTED_SI_RECYCLED_COLUMNS
+    + PC_ASIA_CONVERTED_GF_RECYCLED_COLUMNS
+)
 
 
 ########################## Conversion Rates ##########################

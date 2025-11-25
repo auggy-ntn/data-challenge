@@ -10,6 +10,13 @@ ASIA = "asia"
 # Date format used across datasets
 DATE_FORMAT = "%Y-%m-%d"
 
+# PC Price/Mass units:
+RMB_T = "rmb/t"
+RMB_KG = "rmb/kg"
+USD_KG = "usd/kg"
+USD_T = "usd/t"
+INR_KG = "inr/kg"
+
 
 # PC types
 class PCType(Enum):

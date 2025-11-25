@@ -1,5 +1,6 @@
 import pandas as pd
 
+import constants.constants as cst
 import constants.raw_names as raw_names
 from src.utils.logger import logger
 
@@ -74,14 +75,96 @@ def _get_supplier_pc_info(col_name: str) -> tuple[str | None, str | None]:
     return supplier, pc_type
 
 
+def _normalize_mixed_unit_column(
+    series: pd.Series,
+    expected_unit: str,
+    threshold_rmb: float = 100.0,
+    threshold_usd: float = 10.0,
+) -> pd.Series:
+    """Normalize columns with mixed T (ton) and KG values.
+
+    Some columns in the raw data have inconsistent units within the same column:
+    - RMB: Most values in RMB/T (10,000-30,000) but some in RMB/KG (10-100)
+    - USD: Most values in USD/T (1,000-5,000) but some in USD/KG (1-10)
+
+    Detection logic (thresholds are based on typical price ranges):
+    - RMB_T: values < threshold_rmb (100) are likely RMB/KG → multiply by 1000
+    - RMB_KG: values > threshold_rmb (100) are likely RMB/T → divide by 1000
+    - USD_T: values < threshold_usd (10) are likely USD/KG → multiply by 1000
+    - USD_KG: values > threshold_usd * 100 (1000) are likely USD/T → divide by 1000
+
+    Args:
+        series (pd.Series): Price series with potential mixed units.
+        expected_unit (str): The expected unit (from constants).
+        threshold_rmb (float): Threshold for RMB T/KG distinction. Default 100.
+        threshold_usd (float): Threshold for USD T/KG distinction. Default 10.
+
+    Returns:
+        pd.Series: Normalized series with consistent units.
+    """
+    normalized = series.copy()
+
+    if expected_unit == cst.RMB_T:
+        # Values < threshold are likely RMB/KG, convert to RMB/T
+        mask_wrong_unit = (series < threshold_rmb) & series.notna()
+        if mask_wrong_unit.any():
+            count = mask_wrong_unit.sum()
+            logger.warning(
+                f"Detected {count} values < {threshold_rmb} in RMB/T column - "
+                f"normalizing as RMB/KG (multiplying by 1000)"
+            )
+            normalized.loc[mask_wrong_unit] = series.loc[mask_wrong_unit] * 1000
+
+    elif expected_unit == cst.RMB_KG:
+        # Values > threshold are likely RMB/T, convert to RMB/KG
+        mask_wrong_unit = (series > threshold_rmb) & series.notna()
+        if mask_wrong_unit.any():
+            count = mask_wrong_unit.sum()
+            logger.warning(
+                f"Detected {count} values > {threshold_rmb} in RMB/KG column - "
+                f"normalizing as RMB/T (dividing by 1000)"
+            )
+            normalized.loc[mask_wrong_unit] = series.loc[mask_wrong_unit] / 1000
+
+    elif expected_unit == cst.USD_T:
+        # Values < threshold_usd are likely USD/KG, convert to USD/T
+        mask_wrong_unit = (series < threshold_usd) & series.notna()
+        if mask_wrong_unit.any():
+            count = mask_wrong_unit.sum()
+            logger.warning(
+                f"Detected {count} values < {threshold_usd} in USD/T column - "
+                f"normalizing as USD/KG (multiplying by 1000)"
+            )
+            normalized.loc[mask_wrong_unit] = series.loc[mask_wrong_unit] * 1000
+
+    elif expected_unit == cst.USD_KG:
+        # Values > threshold_usd * 100 are likely USD/T, convert to USD/KG
+        threshold_high = threshold_usd * 100
+        mask_wrong_unit = (series > threshold_high) & series.notna()
+        if mask_wrong_unit.any():
+            count = mask_wrong_unit.sum()
+            logger.warning(
+                f"Detected {count} values > {threshold_high} in USD/KG column - "
+                f"normalizing as USD/T (dividing by 1000)"
+            )
+            normalized.loc[mask_wrong_unit] = series.loc[mask_wrong_unit] / 1000
+
+    return normalized
+
+
 def convert_pc_asia_prices(df_pc_asia: pd.DataFrame) -> pd.DataFrame:
-    """Convert all Asia PC price columns to USD/Kg..
+    """Convert all Asia PC price columns to USD/Kg.
 
     This function processes the Asia dataset dataframe and converts all PC price
-    columns to USD/Kg. It handles conversions from RMB/T, RMB/Kg, and INR/Kg to
-    USD/Kg using the provided exchange rates in the dataframe.
-    Specific column naming knowledge comes from an EDA of the Asia dataset and is
-    hardcoded in this function. Subject to change if the raw data format changes.
+    columns to USD/Kg. It handles conversions from RMB/T, RMB/Kg, USD/T, and INR/Kg
+    to USD/Kg using the provided exchange rates in the dataframe and the unit
+    mappings defined in constants.raw_names.PC_ASIA_PRICE_COLUMNS_UNITS.
+
+    NOTE: Some columns have mixed units (RMB/T and RMB/KG values in the same column).
+    These are automatically detected and normalized before conversion.
+
+    When multiple columns convert to the same standardized name, the minimum value
+    across those columns is kept for each row.
 
     Args:
         df_pc_asia (pd.DataFrame): DataFrame containing Asia PC price data.
@@ -90,32 +173,26 @@ def convert_pc_asia_prices(df_pc_asia: pd.DataFrame) -> pd.DataFrame:
         pd.DataFrame: DataFrame with all PC price columns converted to USD/Kg.
     """
     # Dictionary to store converted columns by standardized name
-    # Key: standardized column name, Value: list of (series, priority) tuples
-    # Priority: 0 = USD/Kg (highest), 1 = RMB/Kg or INR/Kg, 2 = RMB/T (lowest)
-    converted_cols_prioritized = {}
+    # Key: standardized column name, Value: list of converted series
+    converted_cols_by_name = {}
     unparsed_cols = []
 
     for col in raw_names.PC_ASIA_PRICE_COLUMNS:
-        supplier, pc_type = _get_supplier_pc_info(col)
+        # Get unit from the dictionary
+        if col not in raw_names.PC_ASIA_PRICE_COLUMNS_UNITS:
+            logger.warning(f"Column '{col}' not found in unit dictionary, skipping")
+            unparsed_cols.append(col)
+            continue
 
-        # Determine unit from column name
-        col_lower = col.lower()
-        if "rmb/t" in col_lower or "cnyperton" in col_lower:
-            unit = "rmb/t"
-        elif "rmb/kg" in col_lower:
-            unit = "rmb/kg"
-        elif "usd/kg" in col_lower:
-            unit = "usd/kg"
-        elif "inr/kg" in col_lower:
-            unit = "inr/kg"
-        else:
-            # Default assumption: USD/Kg if no unit specified
-            unit = "usd/kg"
-            logger.info(f"Column '{col}' has no explicit unit, treating as USD/kg")
+        unit = raw_names.PC_ASIA_PRICE_COLUMNS_UNITS[col]
+
+        # Extract supplier and PC type for standardized naming
+        supplier, pc_type = _get_supplier_pc_info(col)
 
         # Handle columns without supplier name or PC type
         if supplier is None or pc_type is None:
             # Try to extract just the PC type for columns without supplier
+            col_lower = col.lower()
             if " si recycled " in col_lower or col_lower.startswith("pc si recycled"):
                 pc_type_only = "si recycled"
                 new_col_name = f"pc {pc_type_only} (usd/kg)"
@@ -123,91 +200,71 @@ def convert_pc_asia_prices(df_pc_asia: pd.DataFrame) -> pd.DataFrame:
                 pc_type_only = "si"
                 new_col_name = f"pc {pc_type_only} (usd/kg)"
             elif supplier is not None and pc_type is None:
-                # Column has supplier but no PC type (e.g., "asia_supplier_4  (usd/kg)")
-                # This might be a general PC price without specific type
+                # Column has supplier but no PC type
                 logger.warning(f"Dropping '{col}' - has supplier but no PC type")
                 unparsed_cols.append(col)
+                continue
             else:
                 # No supplier and couldn't parse PC type
                 logger.warning(f"Dropping '{col}' - couldn't parse supplier/type")
                 unparsed_cols.append(col)
+                continue
         else:
             # Create standardized column name with supplier
             new_col_name = f"{supplier} pc {pc_type} (usd/kg)"
 
-        # Convert based on unit and assign priority
-        # Priority: 0 = USD/Kg (use as-is), 1 = RMB/Kg or INR/Kg, 2 = RMB/T
-        if unit == "usd/kg":
-            # Already in USD/Kg, just copy (highest priority)
-            converted_series = df_pc_asia[col].copy()
-            priority = 0
-        elif unit == "rmb/t":
-            # Convert from RMB/T to USD/Kg
-            converted_series = (
-                df_pc_asia[col] / df_pc_asia[raw_names.PC_ASIA_USD_RMB] / 1000
-            )
-            priority = 2  # Lowest priority
-        elif unit == "rmb/kg":
+        # Normalize mixed units first (for RMB and USD columns)
+        series = df_pc_asia[col].copy()
+        if unit in [cst.RMB_T, cst.RMB_KG, cst.USD_T, cst.USD_KG]:
+            series = _normalize_mixed_unit_column(series, unit)
+
+        # Convert based on unit
+        if unit == cst.USD_KG:
+            # Already in USD/Kg, just copy
+            converted_series = series
+        elif unit == cst.USD_T:
+            # Convert from USD/T to USD/Kg
+            converted_series = series / 1000
+        elif unit == cst.RMB_KG:
             # Convert from RMB/Kg to USD/Kg
-            converted_series = df_pc_asia[col] / df_pc_asia[raw_names.PC_ASIA_USD_RMB]
-            priority = 1  # Medium priority
-        elif unit == "inr/kg":
+            converted_series = series / df_pc_asia[raw_names.PC_ASIA_USD_RMB]
+        elif unit == cst.INR_KG:
             # Convert from INR/Kg to USD/Kg
-            converted_series = df_pc_asia[col] / df_pc_asia[raw_names.PC_ASIA_USD_INR]
-            priority = 1  # Medium priority
+            converted_series = series / df_pc_asia[raw_names.PC_ASIA_USD_INR]
+        elif unit == cst.RMB_T:
+            # Convert from RMB/T to USD/Kg
+            converted_series = series / df_pc_asia[raw_names.PC_ASIA_USD_RMB] / 1000
         else:
-            # Skip unknown units
+            logger.warning(f"Unknown unit '{unit}' for column '{col}', skipping")
+            unparsed_cols.append(col)
             continue
 
-        # Store with priority for later merging
-        if new_col_name not in converted_cols_prioritized:
-            converted_cols_prioritized[new_col_name] = []
-        converted_cols_prioritized[new_col_name].append((converted_series, priority))
+        # Store converted series
+        if new_col_name not in converted_cols_by_name:
+            converted_cols_by_name[new_col_name] = []
+        converted_cols_by_name[new_col_name].append(converted_series)
 
-    # For duplicate columns (same supplier, same PC type), merge with priority
-    # Priority order: USD/Kg (0) > RMB/Kg or INR/Kg (1) > RMB/T (2)
+    # For duplicate columns, keep the minimum value across columns
     final_cols = {}
-    for col_name, series_list in converted_cols_prioritized.items():
-        # Sort by priority
-        series_list.sort(key=lambda x: x[1])
-
-        # Start with the highest priority series
-        result_series = series_list[0][0].copy()
-
-        # Fill missing values with lower priority series
-        for series, _priority in series_list[1:]:
-            result_series = result_series.fillna(series)
-
-        final_cols[col_name] = result_series
+    for col_name, series_list in converted_cols_by_name.items():
+        if len(series_list) == 1:
+            # Only one column, use it directly
+            final_cols[col_name] = series_list[0]
+        else:
+            # Multiple columns, take minimum across them
+            temp_df = pd.concat(series_list, axis=1)
+            final_cols[col_name] = temp_df.min(axis=1)
 
     # Create new dataframe starting with original columns
     df_pc_asia_converted = df_pc_asia.copy()
 
-    # Track which original columns were converted
-    converted_original_cols = []
-    for col in raw_names.PC_ASIA_PRICE_COLUMNS:
-        supplier, pc_type = _get_supplier_pc_info(col)
-
-        # Try both with and without supplier names
-        possible_new_names = []
-
-        if supplier is not None and pc_type is not None:
-            possible_new_names.append(f"{supplier} pc {pc_type} (usd/kg)")
-
-        # Also check for columns without supplier (like "pc si (usd/kg)")
-        if " si recycled " in col or col.startswith("pc si recycled"):
-            possible_new_names.append("pc si recycled (usd/kg)")
-        elif " si " in col or col.startswith("pc si"):
-            possible_new_names.append("pc si (usd/kg)")
-
-        # Check if any of the possible names exists in final_cols
-        for new_col_name in possible_new_names:
-            if new_col_name in final_cols:
-                converted_original_cols.append(col)
-                break
-
-    # Remove only the columns that were successfully converted
-    df_pc_asia_converted = df_pc_asia_converted.drop(columns=converted_original_cols)
+    # Remove all original price columns that were converted
+    cols_to_drop = [
+        col for col in raw_names.PC_ASIA_PRICE_COLUMNS if col not in unparsed_cols
+    ]
+    df_pc_asia_converted = df_pc_asia_converted.drop(
+        columns=cols_to_drop, errors="ignore"
+    )
 
     # Add all converted price columns (sorted for consistent column order)
     for col_name, values in sorted(final_cols.items()):
@@ -215,7 +272,8 @@ def convert_pc_asia_prices(df_pc_asia: pd.DataFrame) -> pd.DataFrame:
 
     logger.info(
         f"Converted {len(final_cols)} price columns to USD/Kg "
-        f"from {len(converted_original_cols)} original columns"
+        f"from {len(raw_names.PC_ASIA_PRICE_COLUMNS) - len(unparsed_cols)} "
+        "original columns"
     )
 
     if unparsed_cols:
