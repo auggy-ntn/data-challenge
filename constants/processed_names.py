@@ -19,8 +19,6 @@ WIDE_TIME_IDX = "time_idx"
 LONG_DATE = intermediate_names.PC_EU_DATE  # "date"
 
 LONG_REGION = "region"
-EUROPE = "europe"
-ASIA = "asia"
 
 LONG_PC_TYPE = "pc_type"
 LONG_PC_PRICE = "pc_price"

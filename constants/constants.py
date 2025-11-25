@@ -4,6 +4,8 @@ from enum import Enum
 # Prefixes for datasets
 EU_PREFIX = "eu_"
 ASIA_PREFIX = "asia_"
+EUROPE = "europe"
+ASIA = "asia"
 
 # Date format used across datasets
 DATE_FORMAT = "%Y-%m-%d"
@@ -11,7 +13,10 @@ DATE_FORMAT = "%Y-%m-%d"
 
 # PC types
 class PCType(Enum):
-    """Available PC types in the data for Europe."""
+    """Available PC types in the data for Europe.
+
+    These are the target categories for forecasting.
+    """
 
     CRYSTAL = "crystal"
     WHITE = "white"
@@ -49,3 +54,15 @@ ROC_PERIOD_3_MONTHS = 3
 ROC_PERIOD_6_MONTHS = 6
 ROC_PERIOD_9_MONTHS = 9
 ROC_PERIOD_12_MONTHS = 12
+
+
+# Performance metrics
+GLOBAL_MAPE = "global_mape"
+WEIGHTED_MAPE = "weighted_mape"
+
+# MLflow
+# Tags
+MLFLOW_MODEL_PHILOSOPHY = "model_philosophy"
+MLFLOW_MODEL_TYPE = "model_type"
+MLFLOW_HORIZON = "horizon"
+MLFLOW_FUNCTION = "function"
