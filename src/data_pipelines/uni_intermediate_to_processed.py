@@ -11,6 +11,7 @@ import src.utils.feature_engineering as fe_utils
 
 def build_univariate_dataset(
     horizon: int,
+    group_by_pc_types: bool,
     include_exogenous: bool = True,
     include_differencing: bool = True,
 ) -> pd.DataFrame:
@@ -21,6 +22,7 @@ def build_univariate_dataset(
 
     Args:
         horizon: Forecast horizon in months (3, 6, or 9)
+        group_by_pc_types: Whether PC prices are grouped by pc_types
         include_exogenous: Whether to add exogenous variables
         include_differencing: Whether to add differencing features (
 
@@ -40,7 +42,7 @@ def build_univariate_dataset(
                              time_idx
     """
     # 1. Create base wide format with exogenous variables
-    wide_df = fe_utils.create_wide_format()
+    wide_df = fe_utils.create_wide_format(group_by_pc_types=group_by_pc_types)
 
     # 2. Date column
     date_col = processed_names.WIDE_DATE
@@ -49,7 +51,10 @@ def build_univariate_dataset(
     wide_df = fe_utils.uni_add_time_features(wide_df, date_col=date_col)
 
     # 4. Get list of PC price columns
-    pc_price_cols = intermediate_names.ENDOGENOUS_COLUMNS
+    if group_by_pc_types:
+        pc_price_cols = intermediate_names.GROUPED_ENDOGENOUS_COLUMNS
+    else:
+        pc_price_cols = intermediate_names.BASE_ENDOGENOUS_COLUMNS
 
     # 5. Horizon-specific configuration
     # For direct forecasting, we can use all historical lags including recent ones
@@ -139,10 +144,20 @@ def build_univariate_dataset(
 
 
 if __name__ == "__main__":
-    df_3m = build_univariate_dataset(horizon=3)
-    df_6m = build_univariate_dataset(horizon=6)
-    df_9m = build_univariate_dataset(horizon=9)
+    # Univariate datasets without grouping by pc_types
+    df_3m = build_univariate_dataset(horizon=3, group_by_pc_types=False)
+    df_6m = build_univariate_dataset(horizon=6, group_by_pc_types=False)
+    df_9m = build_univariate_dataset(horizon=9, group_by_pc_types=False)
 
     df_3m.to_csv(pth.PROCESSED_DATA_DIR / "uni_3m.csv", index=False)
     df_6m.to_csv(pth.PROCESSED_DATA_DIR / "uni_6m.csv", index=False)
     df_9m.to_csv(pth.PROCESSED_DATA_DIR / "uni_9m.csv", index=False)
+
+    # Univariate datasets with PC prices grouped by pc_types
+    df_3m_grouped = build_univariate_dataset(horizon=3, group_by_pc_types=True)
+    df_6m_grouped = build_univariate_dataset(horizon=6, group_by_pc_types=True)
+    df_9m_grouped = build_univariate_dataset(horizon=9, group_by_pc_types=True)
+
+    df_3m_grouped.to_csv(pth.PROCESSED_DATA_DIR / "uni_3m_grouped.csv", index=False)
+    df_6m_grouped.to_csv(pth.PROCESSED_DATA_DIR / "uni_6m_grouped.csv", index=False)
+    df_9m_grouped.to_csv(pth.PROCESSED_DATA_DIR / "uni_9m_grouped.csv", index=False)

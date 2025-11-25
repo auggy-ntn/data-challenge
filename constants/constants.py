@@ -17,6 +17,9 @@ USD_KG = "usd/kg"
 USD_T = "usd/t"
 INR_KG = "inr/kg"
 
+# Transportation cost from Asia to Europe
+TRANSPORT_COST_EUR_KG = 0.3  # EUR/kg (client provided)
+
 
 # PC types
 class PCType(Enum):
