@@ -158,6 +158,7 @@ PC_ASIA_MONTH = "month"
 PC_ASIA_DATE = "date"
 PC_ASIA_USD_RMB = "usd/rmb"
 PC_ASIA_USD_INR = "usd/inr"
+PC_ASIA_USD_EUR = "usd/eur"
 
 # Asia dataset - Reference prices
 PC_ASIA_ICIS_USD = "pc icis (usd)"
@@ -432,6 +433,10 @@ DEXCHUS_VALUE = "DEXCHUS"
 # DEXINUS dataset - USD to INR conversion rates
 DEXINUS_OBSERVATION_DATE = "observation_date"
 DEXINUS_VALUE = "DEXINUS"
+
+# DEXUSEU dataset - USD to EUR conversion rates
+DEXUSEU_OBSERVATION_DATE = "observation_date"
+DEXUSEU_VALUE = "DEXUSEU"
 
 
 ########################## electricity_price ##########################

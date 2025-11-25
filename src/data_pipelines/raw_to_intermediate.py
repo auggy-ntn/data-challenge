@@ -337,6 +337,22 @@ def raw_to_intermediate_pc_price_asia(
         .fillna(method="bfill")
     )
 
+    # EUR to USD conversion
+    conversion_map_eur = conversion_rates.set_index(raw_names.DEXUSEU_OBSERVATION_DATE)[
+        raw_names.DEXUSEU_VALUE
+    ].to_dict()
+    intermediate_df[raw_names.PC_ASIA_USD_EUR] = intermediate_df[
+        raw_names.PC_ASIA_DATE
+    ].map(conversion_map_eur)
+    intermediate_df = intermediate_df.sort_values(
+        by=raw_names.PC_ASIA_DATE
+    ).reset_index(drop=True)
+    intermediate_df[raw_names.PC_ASIA_USD_EUR] = (
+        intermediate_df[raw_names.PC_ASIA_USD_EUR]
+        .fillna(method="ffill")
+        .fillna(method="bfill")
+    )
+
     # Apply currency conversion to prices in RMB and INR to get all prices in USD
     logger.info("Applying currency conversion to supplier prices")
     intermediate_df = convert_pc_asia_prices(intermediate_df)
@@ -374,6 +390,22 @@ def raw_to_intermediate_pc_price_asia(
             intermediate_df[raw_names.PC_ASIA_CONVERTED_SI_RECYCLED_COLUMNS].min(axis=1)
         )
 
+        # Final conversion: prices are in USD/Kg, convert to EUR/Kg
+        for col in [
+            intermediate_names.PC_ASIA_GP_BEST_PRICE,
+            intermediate_names.PC_ASIA_GP_RECYCLED_BEST_PRICE,
+            intermediate_names.PC_ASIA_FR_BEST_PRICE,
+            intermediate_names.PC_ASIA_GF_BEST_PRICE,
+            intermediate_names.PC_ASIA_GF_RECYCLED_BEST_PRICE,
+            intermediate_names.PC_ASIA_NAT_BEST_PRICE,
+            intermediate_names.PC_ASIA_SI_BEST_PRICE,
+            intermediate_names.PC_ASIA_SI_RECYCLED_BEST_PRICE,
+        ]:
+            intermediate_df[col] = (
+                intermediate_df[col] / intermediate_df[raw_names.PC_ASIA_USD_EUR]
+                + cst.TRANSPORT_COST_EUR_KG
+            )
+
         # Drop individual supplier columns to keep only best price columns
         supplier_columns = [
             col
@@ -406,6 +438,16 @@ def raw_to_intermediate_pc_price_asia(
         intermediate_df[intermediate_names.PC_ASIA_GREEN_BEST_PRICE] = intermediate_df[
             raw_names.PC_ASIA_CONVERTED_GREEN_COLUMNS
         ].min(axis=1)
+
+        # Final conversion: prices are in USD/Kg, convert to EUR/Kg
+        for col in [
+            intermediate_names.PC_ASIA_REGULAR_BEST_PRICE,
+            intermediate_names.PC_ASIA_GREEN_BEST_PRICE,
+        ]:
+            intermediate_df[col] = (
+                intermediate_df[col] / intermediate_df[raw_names.PC_ASIA_USD_EUR]
+                + cst.TRANSPORT_COST_EUR_KG
+            )
 
         # Drop individual supplier columns to keep only best price columns
         supplier_columns = [
@@ -631,10 +673,12 @@ def raw_to_intermediate(group_by_pc_types: bool) -> None:
     logger.info(
         "Reading raw currency conversion rates datasets at "
         f"{pth.RAW_DATA_DIR / 'DEXCHUS.csv'} and "
-        f"{pth.RAW_DATA_DIR / 'DEXINUS.csv'}"
+        f"{pth.RAW_DATA_DIR / 'DEXINUS.csv'} and "
+        f"{pth.RAW_DATA_DIR / 'DEXUSEU.csv'}"
     )
     df_conversion_rates_usd_rmb = pd.read_csv(pth.RAW_DATA_DIR / "DEXCHUS.csv")
     df_conversion_rates_usd_inr = pd.read_csv(pth.RAW_DATA_DIR / "DEXINUS.csv")
+    df_conversion_rates_usd_eur = pd.read_csv(pth.RAW_DATA_DIR / "DEXUSEU.csv")
 
     df_conversion_rates_usd_rmb[raw_names.DEXCHUS_OBSERVATION_DATE] = pd.to_datetime(
         df_conversion_rates_usd_rmb[raw_names.DEXCHUS_OBSERVATION_DATE],
@@ -644,12 +688,24 @@ def raw_to_intermediate(group_by_pc_types: bool) -> None:
         df_conversion_rates_usd_inr[raw_names.DEXINUS_OBSERVATION_DATE],
         format=cst.DATE_FORMAT,
     )
+    df_conversion_rates_usd_eur[raw_names.DEXUSEU_OBSERVATION_DATE] = pd.to_datetime(
+        df_conversion_rates_usd_eur[raw_names.DEXUSEU_OBSERVATION_DATE],
+        format=cst.DATE_FORMAT,
+    )
 
     df_conversion_rates = pd.merge(
         df_conversion_rates_usd_rmb,
         df_conversion_rates_usd_inr,
         left_on=raw_names.DEXCHUS_OBSERVATION_DATE,
         right_on=raw_names.DEXINUS_OBSERVATION_DATE,
+        how="outer",
+        validate="1:1",
+    )
+    df_conversion_rates = pd.merge(
+        df_conversion_rates,
+        df_conversion_rates_usd_eur,
+        left_on=raw_names.DEXCHUS_OBSERVATION_DATE,
+        right_on=raw_names.DEXUSEU_OBSERVATION_DATE,
         how="outer",
         validate="1:1",
     )

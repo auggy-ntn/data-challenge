@@ -48,8 +48,8 @@ stages:
       size: 121819
     - path: src/data_pipelines/raw_to_intermediate.py
       hash: md5
-      md5: 10ea4b6fb05d91a4f0341af594722fa3
-      size: 28862
+      md5: ad84d8d559086c181555187b87a50c44
+      size: 31159
     outs:
     - path:
         data/intermediate/automobile_industry/intermediate_automobile_industry.csv
@@ -63,12 +63,12 @@ stages:
       size: 8516
     - path: data/intermediate/pc_price/intermediate_pc_price_asia.csv
       hash: md5
-      md5: c7a93b792d7d74fb357f61cf68c25d0c
-      size: 19506
+      md5: 2af62f56067e1b1089e445d05bb271cd
+      size: 20260
     - path: data/intermediate/pc_price/intermediate_pc_price_asia_grouped.csv
       hash: md5
-      md5: afcafa30b27e8e97f078c6b3b583884f
-      size: 23962
+      md5: c7f0c57e409d9b8a2b6deecbc1d64351
+      size: 24874
     - path: data/intermediate/pc_price/intermediate_pc_price_eu.csv
       hash: md5
       md5: b23bc5490c986dfb436aa3d2c7b45c1f
@@ -101,12 +101,12 @@ stages:
       size: 8516
     - path: data/intermediate/pc_price/intermediate_pc_price_asia.csv
       hash: md5
-      md5: c7a93b792d7d74fb357f61cf68c25d0c
-      size: 19506
+      md5: 2af62f56067e1b1089e445d05bb271cd
+      size: 20260
     - path: data/intermediate/pc_price/intermediate_pc_price_asia_grouped.csv
       hash: md5
-      md5: afcafa30b27e8e97f078c6b3b583884f
-      size: 23962
+      md5: c7f0c57e409d9b8a2b6deecbc1d64351
+      size: 24874
     - path: data/intermediate/pc_price/intermediate_pc_price_eu.csv
       hash: md5
       md5: b23bc5490c986dfb436aa3d2c7b45c1f
@@ -131,16 +131,16 @@ stages:
     outs:
     - path: data/processed/uni_3m.csv
       hash: md5
-      md5: 6ab43a6b5e1066cf8fcac937115c9270
-      size: 363190
+      md5: 90e0ccba4e5a020612f9fa43290ef66e
+      size: 372090
     - path: data/processed/uni_6m.csv
       hash: md5
-      md5: f88fb1646bb50c00154ce5b9ff50d45b
-      size: 362220
+      md5: 66db35d90161f4b3fc468bcbb39d2a43
+      size: 370937
     - path: data/processed/uni_9m.csv
       hash: md5
-      md5: 2e256f8f6d6e8567570cfaa02c7df682
-      size: 374994
+      md5: 25fd6cf0c68ee0d99a53eb6df7b6dc32
+      size: 384683
   intermediate_to_processed_multi:
     cmd: uv run python3 src/data_pipelines/multi_intermediate_to_processed.py
     deps:
@@ -156,12 +156,12 @@ stages:
       size: 8516
     - path: data/intermediate/pc_price/intermediate_pc_price_asia.csv
       hash: md5
-      md5: c7a93b792d7d74fb357f61cf68c25d0c
-      size: 19506
+      md5: 2af62f56067e1b1089e445d05bb271cd
+      size: 20260
     - path: data/intermediate/pc_price/intermediate_pc_price_asia_grouped.csv
       hash: md5
-      md5: afcafa30b27e8e97f078c6b3b583884f
-      size: 23962
+      md5: c7f0c57e409d9b8a2b6deecbc1d64351
+      size: 24874
     - path: data/intermediate/pc_price/intermediate_pc_price_eu.csv
       hash: md5
       md5: b23bc5490c986dfb436aa3d2c7b45c1f
@@ -186,13 +186,13 @@ stages:
     outs:
     - path: data/processed/multi_3m.csv
       hash: md5
-      md5: 73c2dfe0290ab0e87b1b3ba4cf74c160
-      size: 282185
+      md5: b6a1aa92d26eeb140c2cb0c454025a47
+      size: 288052
     - path: data/processed/multi_6m.csv
       hash: md5
-      md5: c9fd8ca134ea550295cb8683d3e01254
-      size: 281554
+      md5: 1ab2d643b3f6002c0a98ce719bff7725
+      size: 287426
     - path: data/processed/multi_9m.csv
       hash: md5
-      md5: ac1d431b44c9c2b99be3a60f4868be76
-      size: 292828
+      md5: 212ca0735dd204e84c13ec9cdccf198c
+      size: 299887
