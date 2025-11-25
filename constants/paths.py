@@ -13,6 +13,7 @@ DATA_DIR = PROJECT_ROOT / "data"
 RAW_DATA_DIR = DATA_DIR / "raw"
 INTERMEDIATE_DATA_DIR = DATA_DIR / "intermediate"
 PROCESSED_DATA_DIR = DATA_DIR / "processed"
+SE_PREDICTIONS_DATA_DIR = DATA_DIR / "se_predictions"
 
 # Raw data subdirectories
 RAW_AUTOMOBILE_INDUSTRY_DIR = RAW_DATA_DIR / "automobile_industry"

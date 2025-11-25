@@ -50,6 +50,8 @@ stages:
       - data/processed/uni_3m.csv
       - data/processed/uni_6m.csv
       - data/processed/uni_9m.csv
+      - data/se_predictions/se_predictions_uni_grouped.csv
+      - data/se_predictions/se_predictions_uni.csv
 
   # Stage 2 bis: Convert intermediate data to processed format for multivariate modeling
   intermediate_to_processed_multi:
@@ -69,3 +71,5 @@ stages:
       - data/processed/multi_3m.csv
       - data/processed/multi_6m.csv
       - data/processed/multi_9m.csv
+      - data/se_predictions/se_predictions_multi_grouped.csv
+      - data/se_predictions/se_predictions_multi.csv

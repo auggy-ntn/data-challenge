@@ -1,6 +1,11 @@
 # Constants for the project
 from enum import Enum
 
+# Cutoff date (YYYY-MM-DD)
+# Data before this date is used for training/validation/evaluation
+# Data after this date is predicted data (not observed)
+CUTOFF_DATE = "2025-07-01"
+
 # Prefixes for datasets
 EU_PREFIX = "eu_"
 ASIA_PREFIX = "asia_"

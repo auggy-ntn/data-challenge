@@ -44,5 +44,3 @@ LONG_PRICE_DEVIATION_FROM_REGIONAL_AVG = "price_deviation_from_regional_avg"
 LONG_PC_RECYCLED = "is_recycled"
 LONG_PC_GLASS_FILLED = "is_glass_filled"
 LONG_PC_FLAME_RETARDANT = "is_flame_retardant"
-
-#

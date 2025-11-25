@@ -43,6 +43,24 @@ def build_univariate_dataset(
     """
     # 1. Create base wide format with exogenous variables
     wide_df = fe_utils.create_wide_format(group_by_pc_types=group_by_pc_types)
+    future_preds = wide_df[wide_df[processed_names.WIDE_DATE] >= cst.CUTOFF_DATE].copy()
+    wide_df = wide_df[wide_df[processed_names.WIDE_DATE] < cst.CUTOFF_DATE].copy()
+    if group_by_pc_types:
+        future_preds = future_preds[
+            [processed_names.WIDE_DATE] + intermediate_names.GROUPED_ENDOGENOUS_COLUMNS
+        ]
+        # Save future predictions for later use
+        future_preds.to_csv(
+            pth.SE_PREDICTIONS_DATA_DIR / "se_predictions_uni_grouped.csv", index=False
+        )
+    else:
+        future_preds = future_preds[
+            [processed_names.WIDE_DATE] + intermediate_names.BASE_ENDOGENOUS_COLUMNS
+        ]
+        # Save future predictions for later use
+        future_preds.to_csv(
+            pth.SE_PREDICTIONS_DATA_DIR / "se_predictions_uni.csv", index=False
+        )
 
     # 2. Date column
     date_col = processed_names.WIDE_DATE
