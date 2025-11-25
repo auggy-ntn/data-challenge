@@ -11,7 +11,6 @@ import constants.raw_names as raw_names
 from src.utils.data_preprocessing import (
     aggregate_shutdowns_by_month,
     clean_column_names,
-    compute_best_price_asia,
     convert_pc_asia_prices,
     extract_bpa_capacity_loss,
 )
@@ -264,7 +263,7 @@ def raw_to_intermediate_pc_price_eu(
 
 
 def raw_to_intermediate_pc_price_asia(
-    pc_price_asia: pd.DataFrame, conversion_rates: pd.DataFrame
+    pc_price_asia: pd.DataFrame, conversion_rates: pd.DataFrame, group_by_pc_types: bool
 ) -> None:
     """Transforms the raw pc_price Asia dataset to intermediate format.
 
@@ -274,6 +273,7 @@ def raw_to_intermediate_pc_price_asia(
     Args:
         pc_price_asia (pd.DataFrame): Raw pc_price Asia dataframe.
         conversion_rates (pd.DataFrame): Currency conversion rates dataframe.
+        group_by_pc_types (bool): Whether to group by PC types to compute best prices.
     """
     # There are 2 date columns ("Date" and "date"), drop the lowercase one
     # before cleaning to avoid duplicate column names
@@ -341,52 +341,109 @@ def raw_to_intermediate_pc_price_asia(
     logger.info("Applying currency conversion to supplier prices")
     intermediate_df = convert_pc_asia_prices(intermediate_df)
 
-    # At this point, all supplier price columns should be in USD/Kg with standardized
-    # names.
-    # Group by PC type, compute best price (minimum across suppliers) for each PC type
-    logger.info("Computing best prices for each PC type")
+    if group_by_pc_types:
+        # At this point, all supplier price columns should be in USD/Kg with
+        # standardized names.
+        # Group by PC type, compute best price (minimum across suppliers) for each PC
+        # type.
+        logger.info("Computing best prices for each PC type")
 
-    # Compute best prices for all PC types
-    intermediate_df[intermediate_names.PC_ASIA_GP_BEST_PRICE] = compute_best_price_asia(
-        intermediate_df, "gp"
-    )
-    intermediate_df[intermediate_names.PC_ASIA_GP_RECYCLED_BEST_PRICE] = (
-        compute_best_price_asia(intermediate_df, "gp recycled")
-    )
-    intermediate_df[intermediate_names.PC_ASIA_FR_BEST_PRICE] = compute_best_price_asia(
-        intermediate_df, "fr"
-    )
-    intermediate_df[intermediate_names.PC_ASIA_GF_BEST_PRICE] = compute_best_price_asia(
-        intermediate_df, "gf"
-    )
-    intermediate_df[intermediate_names.PC_ASIA_GF_RECYCLED_BEST_PRICE] = (
-        compute_best_price_asia(intermediate_df, "gf recycled")
-    )
-    intermediate_df[intermediate_names.PC_ASIA_NAT_BEST_PRICE] = (
-        compute_best_price_asia(intermediate_df, "nat")
-    )
-    intermediate_df[intermediate_names.PC_ASIA_SI_BEST_PRICE] = compute_best_price_asia(
-        intermediate_df, "si"
-    )
-    intermediate_df[intermediate_names.PC_ASIA_SI_RECYCLED_BEST_PRICE] = (
-        compute_best_price_asia(intermediate_df, "si recycled")
-    )
+        # Compute best prices for all PC types
+        intermediate_df[intermediate_names.PC_ASIA_GP_BEST_PRICE] = intermediate_df[
+            raw_names.PC_ASIA_CONVERTED_GP_COLUMNS
+        ].min(axis=1)
+        intermediate_df[intermediate_names.PC_ASIA_GP_RECYCLED_BEST_PRICE] = (
+            intermediate_df[raw_names.PC_ASIA_CONVERTED_GP_RECYCLED_COLUMNS].min(axis=1)
+        )
+        intermediate_df[intermediate_names.PC_ASIA_FR_BEST_PRICE] = intermediate_df[
+            raw_names.PC_ASIA_CONVERTED_FR_COLUMNS
+        ].min(axis=1)
+        intermediate_df[intermediate_names.PC_ASIA_GF_BEST_PRICE] = intermediate_df[
+            raw_names.PC_ASIA_CONVERTED_GF_COLUMNS
+        ].min(axis=1)
+        intermediate_df[intermediate_names.PC_ASIA_GF_RECYCLED_BEST_PRICE] = (
+            intermediate_df[raw_names.PC_ASIA_CONVERTED_GF_RECYCLED_COLUMNS].min(axis=1)
+        )
+        intermediate_df[intermediate_names.PC_ASIA_NAT_BEST_PRICE] = intermediate_df[
+            raw_names.PC_ASIA_CONVERTED_NAT_COLUMNS
+        ].min(axis=1)
+        intermediate_df[intermediate_names.PC_ASIA_SI_BEST_PRICE] = intermediate_df[
+            raw_names.PC_ASIA_CONVERTED_SI_COLUMNS
+        ].min(axis=1)
+        intermediate_df[intermediate_names.PC_ASIA_SI_RECYCLED_BEST_PRICE] = (
+            intermediate_df[raw_names.PC_ASIA_CONVERTED_SI_RECYCLED_COLUMNS].min(axis=1)
+        )
 
-    # Drop individual supplier columns to keep only best price columns
-    supplier_columns = [
-        col for col in intermediate_df.columns if "(usd/kg)" in col.lower()
-    ]
-    logger.info(f"Dropping {len(supplier_columns)} individual supplier columns")
-    intermediate_df = intermediate_df.drop(columns=supplier_columns, errors="ignore")
+        # Drop individual supplier columns to keep only best price columns
+        supplier_columns = [
+            col
+            for col in intermediate_df.columns
+            if col
+            not in [
+                raw_names.PC_ASIA_DATE,
+                intermediate_names.PC_ASIA_GP_BEST_PRICE,
+                intermediate_names.PC_ASIA_GP_RECYCLED_BEST_PRICE,
+                intermediate_names.PC_ASIA_FR_BEST_PRICE,
+                intermediate_names.PC_ASIA_GF_BEST_PRICE,
+                intermediate_names.PC_ASIA_GF_RECYCLED_BEST_PRICE,
+                intermediate_names.PC_ASIA_NAT_BEST_PRICE,
+                intermediate_names.PC_ASIA_SI_BEST_PRICE,
+                intermediate_names.PC_ASIA_SI_RECYCLED_BEST_PRICE,
+            ]
+            + raw_names.PC_ASIA_REFERENCE_COLUMNS
+            + raw_names.PC_ASIA_SPREAD_COLUMNS
+        ]
+        logger.info(f"Dropping {len(supplier_columns)} individual supplier columns")
+        intermediate_df = intermediate_df.drop(
+            columns=supplier_columns, errors="ignore"
+        )
+
+    else:
+        # Compute best prices without grouping by PC types
+        intermediate_df[intermediate_names.PC_ASIA_REGULAR_BEST_PRICE] = (
+            intermediate_df[raw_names.PC_ASIA_CONVERTED_REGULAR_COLUMNS].min(axis=1)
+        )
+        intermediate_df[intermediate_names.PC_ASIA_GREEN_BEST_PRICE] = intermediate_df[
+            raw_names.PC_ASIA_CONVERTED_GREEN_COLUMNS
+        ].min(axis=1)
+
+        # Drop individual supplier columns to keep only best price columns
+        supplier_columns = [
+            col
+            for col in intermediate_df.columns
+            if col
+            not in [
+                raw_names.PC_ASIA_DATE,
+                intermediate_names.PC_ASIA_REGULAR_BEST_PRICE,
+                intermediate_names.PC_ASIA_GREEN_BEST_PRICE,
+            ]
+            + raw_names.PC_ASIA_REFERENCE_COLUMNS
+            + raw_names.PC_ASIA_SPREAD_COLUMNS
+        ]
+        logger.info(f"Dropping {len(supplier_columns)} individual supplier columns")
+        intermediate_df = intermediate_df.drop(
+            columns=supplier_columns, errors="ignore"
+        )
 
     # Save intermediate dataframe to CSV
-    logger.info(
-        "Saving intermediate pc_price Asia dataset at "
-        f"{pth.INTERMEDIATE_PC_PRICE_DIR / 'intermediate_pc_price_asia.csv'}"
-    )
-    intermediate_df.to_csv(
-        pth.INTERMEDIATE_PC_PRICE_DIR / "intermediate_pc_price_asia.csv", index=False
-    )
+    if group_by_pc_types:
+        logger.info(
+            "Saving intermediate pc_price Asia dataset (grouped by PC types) at "
+            f"{pth.INTERMEDIATE_PC_PRICE_DIR / 'intermediate_pc_price_asia_grouped.csv'}"  # noqa: E501
+        )
+        intermediate_df.to_csv(
+            pth.INTERMEDIATE_PC_PRICE_DIR / "intermediate_pc_price_asia_grouped.csv",
+            index=False,
+        )
+    else:
+        logger.info(
+            "Saving intermediate pc_price Asia dataset at "
+            f"{pth.INTERMEDIATE_PC_PRICE_DIR / 'intermediate_pc_price_asia.csv'}"
+        )
+        intermediate_df.to_csv(
+            pth.INTERMEDIATE_PC_PRICE_DIR / "intermediate_pc_price_asia.csv",
+            index=False,
+        )
 
 
 def raw_to_intermediate_electricity_price(electricity_price: pd.DataFrame) -> None:
@@ -602,7 +659,9 @@ def raw_to_intermediate(group_by_pc_types: bool) -> None:
         f"{pth.RAW_PC_PRICE_DIR / 'pc_price_asia.csv'}"
     )
     raw_pc_price_asia = pd.read_csv(pth.RAW_PC_PRICE_DIR / "pc_price_asia.csv", sep=";")
-    raw_to_intermediate_pc_price_asia(raw_pc_price_asia, df_conversion_rates)
+    raw_to_intermediate_pc_price_asia(
+        raw_pc_price_asia, df_conversion_rates, group_by_pc_types=group_by_pc_types
+    )
     logger.info("Completed processing raw to intermediate pc_price Asia dataset")
 
     # electricity_price dataset

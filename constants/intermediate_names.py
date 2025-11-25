@@ -85,6 +85,9 @@ PC_ASIA_NAT_BEST_PRICE = "pc_nat_best_price"
 PC_ASIA_SI_BEST_PRICE = "pc_si_best_price"
 PC_ASIA_SI_RECYCLED_BEST_PRICE = "pc_si_recycled_best_price"
 
+PC_ASIA_REGULAR_BEST_PRICE = "pc_asia_regular_best_price"
+PC_ASIA_GREEN_BEST_PRICE = "pc_asia_green_best_price"
+
 # Endogenous columns list (all PC price columns with prefixes)
 ENDOGENOUS_COLUMNS = [
     EU_PREFIX + PC_EU_PC_CRYSTAL_BEST_PRICE,

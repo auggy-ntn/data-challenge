@@ -48,8 +48,8 @@ stages:
       size: 121819
     - path: src/data_pipelines/raw_to_intermediate.py
       hash: md5
-      md5: f95d30b882ff1189b10933c5100031e2
-      size: 26156
+      md5: 10ea4b6fb05d91a4f0341af594722fa3
+      size: 28862
     outs:
     - path:
         data/intermediate/automobile_industry/intermediate_automobile_industry.csv
@@ -63,8 +63,8 @@ stages:
       size: 8516
     - path: data/intermediate/pc_price/intermediate_pc_price_asia.csv
       hash: md5
-      md5: 49f6461ddce15011768bdf9862181bf1
-      size: 26305
+      md5: c7a93b792d7d74fb357f61cf68c25d0c
+      size: 19506
     - path: data/intermediate/pc_price/intermediate_pc_price_eu.csv
       hash: md5
       md5: b23bc5490c986dfb436aa3d2c7b45c1f
