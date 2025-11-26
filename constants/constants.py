@@ -1,6 +1,11 @@
 # Constants for the project
 from enum import Enum
 
+# Cutoff date (YYYY-MM-DD)
+# Data before this date is used for training/validation/evaluation
+# Data after this date is predicted data (not observed)
+CUTOFF_DATE = "2025-07-01"
+
 # Prefixes for datasets
 EU_PREFIX = "eu_"
 ASIA_PREFIX = "asia_"
@@ -23,7 +28,7 @@ TRANSPORT_COST_EUR_KG = 0.3  # EUR/kg (client provided)
 
 # PC types
 class PCType(Enum):
-    """Available PC types in the data for Europe.
+    """Available PC types in the data.
 
     These are the target categories for forecasting.
     """
@@ -35,6 +40,17 @@ class PCType(Enum):
     RECYCLED_GF10_WHITE = "recycled_gf10_white"
     RECYCLED_GF10_GREY = "recycled_gf10_grey"
     SI = "si"
+    # GF = "gf"
+    # GP = "gp"
+    # FR = "fr"
+    # GP_RECYCLED = "gp_recycled"
+    # GF_RECYCLED = "gf_recycled"
+    # NAT = "nat"
+    # SI_RECYCLED = "si_recycled"
+
+
+REGULAR_PC_TYPE = "regular"
+GREEN_PC_TYPE = "green"
 
 
 # Horizons in months

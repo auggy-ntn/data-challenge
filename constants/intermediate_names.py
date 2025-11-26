@@ -66,8 +66,8 @@ PC_EU_PC_RECYCLED_GF10_WHITE_BEST_PRICE = "pc_recycled_gf10_white_best_price"
 PC_EU_PC_RECYCLED_GF10_GREY_BEST_PRICE = "pc_recycled_gf10_grey_best_price"
 PC_EU_PC_SI_BEST_PRICE = "pc_si_best_price"
 
-PC_EU_REGULAR_BEST_PRICE = "pc_eu_regular_best_price"
-PC_EU_GREEN_BEST_PRICE = "pc_eu_green_best_price"
+PC_EU_REGULAR_BEST_PRICE = "pc_regular_best_price"
+PC_EU_GREEN_BEST_PRICE = "pc_green_best_price"
 
 
 #### Asia dataset ####
@@ -85,8 +85,8 @@ PC_ASIA_NAT_BEST_PRICE = "pc_nat_best_price"
 PC_ASIA_SI_BEST_PRICE = "pc_si_best_price"
 PC_ASIA_SI_RECYCLED_BEST_PRICE = "pc_si_recycled_best_price"
 
-PC_ASIA_REGULAR_BEST_PRICE = "pc_asia_regular_best_price"
-PC_ASIA_GREEN_BEST_PRICE = "pc_asia_green_best_price"
+PC_ASIA_REGULAR_BEST_PRICE = "pc_regular_best_price"
+PC_ASIA_GREEN_BEST_PRICE = "pc_green_best_price"
 
 # Endogenous columns list (all PC price columns with prefixes)
 

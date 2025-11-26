@@ -39,6 +39,25 @@ def build_multivariate_dataset(
     """
     # 1. Create base long format dataset
     long_df = fe_utils.create_long_format(group_by_pc_types=group_by_pc_types)
+    future_preds = long_df[long_df[processed_names.LONG_DATE] >= cst.CUTOFF_DATE].copy()
+    long_df = long_df[long_df[processed_names.LONG_DATE] < cst.CUTOFF_DATE].copy()
+    future_preds = future_preds[
+        [
+            processed_names.LONG_DATE,
+            processed_names.LONG_REGION,
+            processed_names.LONG_PC_TYPE,
+        ]
+    ]
+    # Save future predictions for later use
+    if group_by_pc_types:
+        future_preds.to_csv(
+            pth.SE_PREDICTIONS_DATA_DIR / "se_predictions_multi_grouped.csv",
+            index=False,
+        )
+    else:
+        future_preds.to_csv(
+            pth.SE_PREDICTIONS_DATA_DIR / "se_predictions_multi.csv", index=False
+        )
 
     # 2. Date column
     date_col = processed_names.LONG_DATE
