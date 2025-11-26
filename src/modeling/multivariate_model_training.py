@@ -11,77 +11,14 @@ from xgboost import XGBRegressor
 
 from constants import processed_names
 import constants.constants as cst
-from src.utils.evaluation import compute_performance_metrics
-
-
-def compute_sample_weights(
-    df: pd.DataFrame,
-    group_col: str,
-    region_col: str,
-    target_region: str,
-    method: Literal["inverse_frequency", "sqrt_inverse", "balanced"] = "balanced",
-    region_weight_multiplier: float = 1.5,
-) -> pd.Series:
-    """Compute sample weights based on group frequency and region.
-
-    Args:
-        df (pd.DataFrame): Dataframe containing the data.
-        group_col (str): Column name for grouping (e.g., pc_type).
-        region_col (str): Column name for region.
-        target_region (str): Region to prioritize.
-        method (Literal["inverse_frequency", "sqrt_inverse", "balanced"], optional):
-            Method to compute weights. Defaults to "balanced".
-        region_weight_multiplier (float, optional): Multiplier for weights of the
-            target region. Defaults to 1.5.
-
-    Returns:
-        pd.Series: Sample weights for each row in the dataframe.
-    """
-    # Validate method
-    if method not in ["inverse_frequency", "sqrt_inverse", "balanced"]:
-        raise ValueError(
-            f"Invalid method: {method}. Choose from 'inverse_frequency', "
-            "'sqrt_inverse', 'balanced'."
-        )
-
-    group_counts = df[group_col].value_counts()
-    n_samples = len(df)
-    n_groups = len(group_counts)
-
-    # Simple inverse frequency weights (1/count)
-    if method == "inverse_frequency":
-        weights_map = {group: 1.0 / count for group, count in group_counts.items()}
-        weights = df[group_col].map(weights_map).values
-
-    # Square root of inverse frequency weights
-    # Less aggressive than inverse_frequency
-    elif method == "sqrt_inverse":
-        weights_map = {
-            group: 1.0 / np.sqrt(count) for group, count in group_counts.items()
-        }
-        weights = df[group_col].map(weights_map).values
-
-    elif method == "balanced":
-        # Sklearn-style balanced weights: n_samples / (n_groups * count)
-        # Normalized so sum(weights) ≈ n_samples (maintains effective sample size)
-        weights_map = {
-            group: n_samples / (n_groups * count)
-            for group, count in group_counts.items()
-        }
-        weights = df[group_col].map(weights_map).values
-
-        # Apply region multiplier
-    region_multiplier = np.where(
-        df[region_col] == target_region,
-        region_weight_multiplier,  # 1.5× weight for Europe
-        1.0,  # 1.0× weight for Asia
-    )
-    weights = weights * region_multiplier
-
-    # Renormalize to maintain effective sample size
-    weights = weights * len(df) / weights.sum()
-
-    return weights
+from src.modeling.evaluation import multi_compute_performance_metrics
+from src.modeling.multivariate_data_prep import (
+    adaptive_train_test_split,
+    adaptive_train_validation_test_split,
+    compute_sample_weights,
+    load_and_prepare_data,
+    prepare_training_data,
+)
 
 
 def optimize_xgboost_model(
@@ -151,7 +88,7 @@ def optimize_xgboost_model(
         model = XGBRegressor(**params, **kwargs)
         model.fit(X_train, y_train)
         y_pred = model.predict(X_test)
-        weighted_mape = compute_performance_metrics(
+        weighted_mape = multi_compute_performance_metrics(
             y_test, y_pred, pc_types=pc_types, weights=weights
         ).get(cst.WEIGHTED_MAPE, None)
         return weighted_mape
@@ -268,7 +205,7 @@ def evaluate_and_log_model(
             eval_model.fit(X_train, y_train, sample_weight=train_sample_weights)
 
         # Evaluate model with TEST weights
-        performance_metrics = compute_performance_metrics(
+        performance_metrics = multi_compute_performance_metrics(
             y_true=y_test,
             y_pred=eval_model.predict(X_test),
             pc_types=test_df_aligned[processed_names.LONG_PC_TYPE],
@@ -321,3 +258,187 @@ def evaluate_and_log_model(
                 model=pred_model,
                 signature=signature,
             )
+
+
+def train_global_model(
+    group_by_pc_types: bool,
+    horizon: int,
+    target_test_ratio: float,
+    target_validation_ratio: float,
+    min_train_samples: int,
+    min_validation_samples: int,
+    min_test_samples: int,
+    weighting_method: Literal["inverse_frequency", "sqrt_inverse", "balanced"],
+    model_type: Literal["xgboost", "random_forest", "lightgbm", "catboost", "tft"],
+    hyperparameter_grid: dict | None,
+    mlflow_run_name: str,
+    n_trials: int,
+) -> None:
+    """Train a global model on all PC types and log it to MLflow.
+
+    Args:
+        group_by_pc_types (bool): Whether PC prices are grouped by type.
+        horizon (int): Forecast horizon in months.
+        target_test_ratio (float): Desired test set size.
+        target_validation_ratio (float): Desired validation set size.
+        min_train_samples (int): Minimum training samples per group.
+        min_validation_samples (int): Minimum validation samples per group.
+        min_test_samples (int): Minimum test samples per group.
+        weighting_method (Literal): Method to compute sample weights.
+        model_type (Literal): Type of model to train.
+        hyperparameter_grid (dict | None): Hyperparameter grid for optimization.
+        mlflow_run_name (str): Name for the MLflow run.
+        n_trials (int): Number of trials for hyperparameter optimization.
+    """
+    # 1. Load and prepare data
+    df, target_col, feature_cols = load_and_prepare_data(
+        group_by_pc_types=group_by_pc_types, horizon=horizon
+    )
+
+    # 2. Split data into training and testing sets
+    if group_by_pc_types:
+        train_df, test_df = adaptive_train_test_split(
+            df=df,
+            group_col=processed_names.LONG_PC_TYPE,
+            target_test_ratio=target_test_ratio,
+            min_train_samples=min_train_samples,
+            min_test_samples=min_test_samples,
+        )
+    else:
+        train_df, validation_df, test_df = adaptive_train_validation_test_split(
+            df=df,
+            group_col=processed_names.LONG_PC_TYPE,
+            target_test_ratio=target_test_ratio,
+            target_validation_ratio=target_validation_ratio,
+            min_train_samples=min_train_samples,
+            min_validation_samples=min_validation_samples,
+            min_test_samples=min_test_samples,
+        )
+
+    # 3. Prepare training and testing data
+    if group_by_pc_types:
+        X_train, y_train, X_test, y_test, train_df_aligned, test_df_aligned = (
+            prepare_training_data(
+                train_df=train_df,
+                validation_df=None,
+                test_df=test_df,
+                feature_cols=feature_cols,
+                target_col=target_col,
+                horizon=horizon,
+            )
+        )
+    else:
+        (
+            X_train,
+            y_train,
+            X_validation,
+            y_validation,
+            X_test,
+            y_test,
+            train_df_aligned,
+            validation_df_aligned,
+            test_df_aligned,
+        ) = prepare_training_data(
+            train_df=train_df,
+            validation_df=validation_df,
+            test_df=test_df,
+            feature_cols=feature_cols,
+            target_col=target_col,
+            horizon=horizon,
+        )
+
+    # 4. Compute sample weights for train and test
+    train_sample_weights = compute_sample_weights(
+        df=train_df_aligned,
+        group_col=processed_names.LONG_PC_TYPE,
+        region_col=processed_names.LONG_REGION,
+        target_region=cst.EUROPE,
+        method=weighting_method,
+    )
+
+    if not group_by_pc_types:
+        validation_sample_weights = compute_sample_weights(
+            df=validation_df_aligned,
+            group_col=processed_names.LONG_PC_TYPE,
+            region_col=processed_names.LONG_REGION,
+            target_region=cst.EUROPE,
+            method=weighting_method,
+        )
+
+    test_sample_weights = compute_sample_weights(
+        df=test_df_aligned,
+        group_col=processed_names.LONG_PC_TYPE,
+        region_col=processed_names.LONG_REGION,
+        target_region=cst.EUROPE,
+        method=weighting_method,
+    )
+
+    # 5. Train model
+    if model_type == "xgboost":
+        if group_by_pc_types:
+            best_params = optimize_xgboost_model(
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+                weights=test_sample_weights,
+                hyperparameter_grid=hyperparameter_grid,
+                pc_types=test_df_aligned[processed_names.LONG_PC_TYPE],
+                n_trials=n_trials,
+            )
+        else:
+            best_params = optimize_xgboost_model(
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_validation,
+                y_test=y_validation,
+                weights=validation_sample_weights,
+                hyperparameter_grid=hyperparameter_grid,
+                pc_types=validation_df_aligned[processed_names.LONG_PC_TYPE],
+                n_trials=n_trials,
+            )
+        eval_model = XGBRegressor(**best_params)
+        pred_model = XGBRegressor(**best_params)
+
+        # 6. Evaluate and log model
+        evaluate_and_log_model(
+            eval_model=eval_model,
+            pred_model=pred_model,
+            best_params=best_params,
+            mlflow_run_name=mlflow_run_name,
+            model_type=model_type,
+            horizon=horizon,
+            group_by_pc_types=group_by_pc_types,
+            weighting_method=weighting_method,
+            X_train=X_train,
+            y_train=y_train,
+            X_validation=X_validation if not group_by_pc_types else None,
+            y_validation=y_validation if not group_by_pc_types else None,
+            X_test=X_test,
+            y_test=y_test,
+            train_df_aligned=train_df_aligned,
+            validation_df_aligned=validation_df_aligned
+            if not group_by_pc_types
+            else None,
+            test_df_aligned=test_df_aligned,
+            train_sample_weights=train_sample_weights,
+            test_sample_weights=test_sample_weights,
+        )
+
+    elif model_type == "random_forest":
+        # Placeholder for random forest implementation
+        pass
+
+    elif model_type == "lightgbm":
+        # Placeholder for LightGBM implementation
+        pass
+
+    elif model_type == "catboost":
+        # Placeholder for CatBoost implementation
+        pass
+
+    elif model_type == "tft":
+        # Placeholder for TFT implementation
+        pass
+    else:
+        raise NotImplementedError(f"Model type '{model_type}' not implemented.")

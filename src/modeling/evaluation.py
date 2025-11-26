@@ -7,7 +7,7 @@ from sklearn.metrics import mean_absolute_percentage_error
 import constants.constants as cst
 
 
-def compute_performance_metrics(
+def multi_compute_performance_metrics(
     y_true: np.ndarray,
     y_pred: np.ndarray,
     pc_types: pd.Series,
