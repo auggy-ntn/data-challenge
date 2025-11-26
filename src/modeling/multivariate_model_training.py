@@ -174,7 +174,7 @@ def optimize_lightgbm_model(
             }
         )
 
-        model = LGBMRegressor(**params, **kwargs)
+        model = LGBMRegressor(**params, **kwargs, verbose=-1)
         model.fit(X_train, y_train)
         y_pred = model.predict(X_test)
         weighted_mape = multi_compute_performance_metrics(
@@ -235,6 +235,7 @@ def optimize_catboost_model(
                 # Tree structure
                 "iterations": trial.suggest_int("iterations", 100, 1000),
                 "depth": trial.suggest_int("depth", 3, 10),
+                "grow_policy": "Lossguide",  # Required for max_leaves parameter
                 # Learning rate
                 "learning_rate": trial.suggest_float(
                     "learning_rate", 0.001, 0.3, log=True
@@ -242,7 +243,9 @@ def optimize_catboost_model(
                 # Regularization
                 "l2_leaf_reg": trial.suggest_float("l2_leaf_reg", 1e-8, 10.0, log=True),
                 "min_data_in_leaf": trial.suggest_int("min_data_in_leaf", 1, 100),
-                "max_leaves": trial.suggest_int("max_leaves", 20, 64),
+                "max_leaves": trial.suggest_int(
+                    "max_leaves", 20, 300
+                ),  # Match LightGBM
                 # Sampling
                 "subsample": trial.suggest_float("subsample", 0.6, 1.0),
                 "colsample_bylevel": trial.suggest_float("colsample_bylevel", 0.6, 1.0),
@@ -257,7 +260,9 @@ def optimize_catboost_model(
             }
         )
 
-        model = CatBoostRegressor(**params, **kwargs)
+        model = CatBoostRegressor(
+            **params, **kwargs, verbose=0, allow_writing_files=False
+        )
         model.fit(X_train, y_train)
         y_pred = model.predict(X_test)
         weighted_mape = multi_compute_performance_metrics(
@@ -318,7 +323,9 @@ def optimize_random_forest_model(
                 # Number of trees
                 "n_estimators": trial.suggest_int("n_estimators", 100, 500),
                 # Tree structure
-                "max_depth": trial.suggest_int("max_depth", 5, 30),
+                "max_depth": trial.suggest_int(
+                    "max_depth", 5, 20
+                ),  # Narrowed from 30 to prevent overfitting
                 "min_samples_split": trial.suggest_int("min_samples_split", 2, 20),
                 "min_samples_leaf": trial.suggest_int("min_samples_leaf", 1, 10),
                 # Feature sampling
@@ -549,8 +556,12 @@ def train_global_model(
                 pc_types=test_df_aligned[processed_names.LONG_PC_TYPE],
                 n_trials=n_trials,
             )
-        eval_model = CatBoostRegressor(**best_params)
-        pred_model = CatBoostRegressor(**best_params)
+        eval_model = CatBoostRegressor(
+            **best_params, grow_policy="Lossguide", verbose=0, allow_writing_files=False
+        )
+        pred_model = CatBoostRegressor(
+            **best_params, grow_policy="Lossguide", verbose=0, allow_writing_files=False
+        )
 
     elif model_type == "random_forest":
         if use_validation_set:
