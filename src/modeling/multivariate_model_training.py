@@ -4,8 +4,6 @@ from typing import Literal
 
 from catboost import CatBoostRegressor
 from lightgbm import LGBMRegressor
-import mlflow
-from mlflow.models import infer_signature
 import numpy as np
 import optuna
 import pandas as pd
@@ -14,7 +12,10 @@ from xgboost import XGBRegressor
 
 from constants import processed_names
 import constants.constants as cst
-from src.modeling.evaluation import multi_compute_performance_metrics
+from src.modeling.evaluation import (
+    evaluate_and_log_model,
+    multi_compute_performance_metrics,
+)
 from src.modeling.multivariate_data_prep import (
     adaptive_train_test_split,
     adaptive_train_validation_test_split,
@@ -352,167 +353,6 @@ def optimize_random_forest_model(
     return best_params
 
 
-# Model Evaluation and Logging Functions
-def log_model(
-    model_type: Literal["xgboost", "random_forest", "lightgbm", "catboost", "tft"],
-    model_role: Literal["evaluation", "prediction"],
-    model: object,
-    signature: mlflow.models.signature.ModelSignature,
-) -> None:
-    """Log a trained model to MLflow with the appropriate method.
-
-    Args:
-        model_type (Literal["xgboost", "random_forest", "lightgbm", "catboost", "tft"]):
-            Type of the model.
-        model_role (Literal["evaluation", "prediction"]): Role of the model.
-        model (object): Trained model to log.
-        signature (mlflow.models.signature.ModelSignature): Model signature for logging.
-    """
-    if model_type == "xgboost":
-        mlflow.xgboost.log_model(model, f"{model_role}_model", signature=signature)
-    elif model_type == "lightgbm":
-        mlflow.lightgbm.log_model(model, f"{model_role}_model", signature=signature)
-    elif model_type == "random_forest":
-        mlflow.sklearn.log_model(model, f"{model_role}_model", signature=signature)
-    elif model_type == "catboost":
-        mlflow.catboost.log_model(model, f"{model_role}_model", signature=signature)
-    elif model_type == "tft":
-        mlflow.pytorch.log_model(model, f"{model_role}_model", signature=signature)
-    else:
-        raise ValueError(f"Unsupported model type for logging: {model_type}")
-
-
-def evaluate_and_log_model(
-    eval_model,
-    pred_model,
-    best_params: dict,
-    mlflow_run_name: str,
-    model_type: Literal["xgboost", "random_forest", "lightgbm", "catboost", "tft"],
-    horizon: int,
-    group_by_pc_types: bool,
-    weighting_method: Literal["inverse_frequency", "sqrt_inverse", "balanced"],
-    X_train: np.ndarray,
-    y_train: np.ndarray,
-    X_validation: np.ndarray | None,
-    y_validation: np.ndarray | None,
-    X_test: np.ndarray,
-    y_test: np.ndarray,
-    train_df_aligned: pd.DataFrame,
-    validation_df_aligned: pd.DataFrame | None,
-    test_df_aligned: pd.DataFrame,
-    train_sample_weights: pd.Series,
-    test_sample_weights: pd.Series,
-):
-    """Evaluate and log the performance of a trained model.
-
-    Args:
-        eval_model: Trained model to evaluate.
-        pred_model: Trained model for prediction. (Retrained on full data)
-        best_params (dict): Best hyperparameters for the model.
-        mlflow_run_name (str): Name for the MLflow run.
-        model_type (Literal["xgboost", "random_forest", "lightgbm", "tft"]): Type of the
-            model.
-        horizon (int): Forecast horizon in months.
-        group_by_pc_types (bool): Whether data is grouped by PC types.
-        weighting_method (Literal["inverse_frequency", "sqrt_inverse", "balanced"]):
-            Method used for sample weighting.
-        X_train (np.ndarray): Training feature matrix.
-        y_train (np.ndarray): Training target vector.
-        X_validation (np.ndarray | None): Validation feature matrix.
-        y_validation (np.ndarray | None): Validation target vector.
-        X_test (np.ndarray): Testing feature matrix.
-        y_test (np.ndarray): Testing target vector.
-        train_df_aligned (pd.DataFrame): Aligned training dataframe.
-        validation_df_aligned (pd.DataFrame | None): Aligned validation dataframe.
-        test_df_aligned (pd.DataFrame): Aligned testing dataframe.
-        train_sample_weights (pd.Series): Sample weights for training data.
-        test_sample_weights (pd.Series): Sample weights for testing data.
-    """
-    with mlflow.start_run(run_name=f"{mlflow_run_name}_eval"):
-        mlflow.set_tags(
-            {
-                cst.MLFLOW_MODEL_PHILOSOPHY: "multivariate",
-                cst.MLFLOW_MODEL_TYPE: model_type,
-                cst.MLFLOW_HORIZON: horizon,
-                cst.MLFLOW_FUNCTION: "evaluation",
-            }
-        )
-        mlflow.log_params(best_params)
-        # Train evaluation model with TRAIN weights
-        if group_by_pc_types:
-            eval_model.fit(X_train, y_train, sample_weight=train_sample_weights)
-        else:
-            # Combine TRAIN and VALIDATION for evaluating model on TEST set
-            X_train = np.vstack([X_train, X_validation])
-            y_train = np.concatenate([y_train, y_validation])
-            train_df_aligned = pd.concat(
-                [train_df_aligned, validation_df_aligned], ignore_index=True
-            )
-            train_sample_weights = compute_sample_weights(
-                df=train_df_aligned,
-                group_col=processed_names.LONG_PC_TYPE,
-                region_col=processed_names.LONG_REGION,
-                target_region=cst.EUROPE,
-                method=weighting_method,
-            )
-            eval_model.fit(X_train, y_train, sample_weight=train_sample_weights)
-
-        # Evaluate model with TEST weights
-        performance_metrics = multi_compute_performance_metrics(
-            y_true=y_test,
-            y_pred=eval_model.predict(X_test),
-            pc_types=test_df_aligned[processed_names.LONG_PC_TYPE],
-            weights=test_sample_weights,
-        )
-        for metric_name, metric_value in performance_metrics.items():
-            mlflow.log_metric(metric_name, metric_value)
-
-        # Log model with signature
-        signature = infer_signature(X_train, eval_model.predict(X_train))
-        log_model(
-            model_type=model_type,
-            model_role="evaluation",
-            model=eval_model,
-            signature=signature,
-        )
-
-        # For prediction, retrain on full training data
-        X_full_train = np.vstack([X_train, X_test])
-        y_full_train = np.concatenate([y_train, y_test])
-        full_df_aligned = pd.concat(
-            [train_df_aligned, test_df_aligned], ignore_index=True
-        )
-        sample_weights_full = compute_sample_weights(
-            df=full_df_aligned,
-            group_col=processed_names.LONG_PC_TYPE,
-            region_col=processed_names.LONG_REGION,
-            target_region=cst.EUROPE,
-            method=weighting_method,
-        )
-        with mlflow.start_run(run_name=f"{mlflow_run_name}_predict", nested=True):
-            mlflow.set_tags(
-                {
-                    cst.MLFLOW_MODEL_PHILOSOPHY: "multivariate",
-                    cst.MLFLOW_MODEL_TYPE: model_type,
-                    cst.MLFLOW_HORIZON: horizon,
-                    cst.MLFLOW_FUNCTION: "prediction",
-                }
-            )
-            mlflow.log_params(best_params)
-            pred_model.fit(
-                X_full_train, y_full_train, sample_weight=sample_weights_full
-            )
-
-            # Log model with signature
-            signature = infer_signature(X_full_train, pred_model.predict(X_full_train))
-            log_model(
-                model_type=model_type,
-                model_role="prediction",
-                model=pred_model,
-                signature=signature,
-            )
-
-
 # Global Model Training Function
 def train_global_model(
     group_by_pc_types: bool,
@@ -527,6 +367,7 @@ def train_global_model(
     hyperparameter_grid: dict | None,
     mlflow_run_name: str,
     n_trials: int,
+    shap_max_display: int,
 ) -> None:
     """Train a global model on all PC types and log it to MLflow.
 
@@ -543,6 +384,7 @@ def train_global_model(
         hyperparameter_grid (dict | None): Hyperparameter grid for optimization.
         mlflow_run_name (str): Name for the MLflow run.
         n_trials (int): Number of trials for hyperparameter optimization.
+        shap_max_display (int): Maximum number of features to display in SHAP plots.
     """
     # 1. Load and prepare data (categorical features are label encoded)
     df, target_col, feature_cols = load_and_prepare_data(
@@ -732,7 +574,14 @@ def train_global_model(
         eval_model = RandomForestRegressor(**best_params)
         pred_model = RandomForestRegressor(**best_params)
 
-        # 6. Evaluate and log model
+    elif model_type == "tft":
+        # Placeholder for TFT implementation
+        pass
+    else:
+        raise NotImplementedError(f"Model type '{model_type}' not implemented.")
+
+    # 6. Evaluate and log model (for all model types)
+    if model_type != "tft":  # Skip TFT as it's not implemented yet
         evaluate_and_log_model(
             eval_model=eval_model,
             pred_model=pred_model,
@@ -755,10 +604,6 @@ def train_global_model(
             test_df_aligned=test_df_aligned,
             train_sample_weights=train_sample_weights,
             test_sample_weights=test_sample_weights,
+            feature_cols=feature_cols,
+            shap_max_display=shap_max_display,
         )
-
-    elif model_type == "tft":
-        # Placeholder for TFT implementation
-        pass
-    else:
-        raise NotImplementedError(f"Model type '{model_type}' not implemented.")
