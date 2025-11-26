@@ -224,6 +224,7 @@ def multi_evaluate_and_log_model(
     model_type: Literal["xgboost", "random_forest", "lightgbm", "catboost", "tft"],
     horizon: int,
     use_validation_set: bool,
+    group_by_pc_types: bool,
     weighting_method: Literal["inverse_frequency", "sqrt_inverse", "balanced"],
     X_train: np.ndarray,
     y_train: np.ndarray,
@@ -250,6 +251,7 @@ def multi_evaluate_and_log_model(
             model.
         horizon (int): Forecast horizon in months.
         use_validation_set (bool): Whether to use a validation set.
+        group_by_pc_types (bool): Whether PC types are grouped.
         weighting_method (Literal["inverse_frequency", "sqrt_inverse", "balanced"]):
             Method used for sample weighting.
         X_train (np.ndarray): Training feature matrix.
@@ -273,6 +275,8 @@ def multi_evaluate_and_log_model(
                 cst.MLFLOW_MODEL_TYPE: model_type,
                 cst.MLFLOW_HORIZON: horizon,
                 cst.MLFLOW_FUNCTION: "evaluation",
+                cst.MLFLOW_USE_VALIDATION_SET: str(use_validation_set),
+                cst.MLFLOW_GROUP_BY_PC_TYPES: str(group_by_pc_types),
             }
         )
         mlflow.log_params(best_params)
@@ -361,6 +365,8 @@ def multi_evaluate_and_log_model(
                     cst.MLFLOW_MODEL_TYPE: model_type,
                     cst.MLFLOW_HORIZON: horizon,
                     cst.MLFLOW_FUNCTION: "prediction",
+                    cst.MLFLOW_USE_VALIDATION_SET: str(use_validation_set),
+                    cst.MLFLOW_GROUP_BY_PC_TYPES: str(group_by_pc_types),
                 }
             )
             mlflow.log_params(best_params)

@@ -398,6 +398,7 @@ def train_global_model(
         train_df, validation_df, test_df = adaptive_train_validation_test_split(
             df=df,
             group_col=processed_names.LONG_PC_TYPE,
+            group_by_pc_types=group_by_pc_types,
             target_test_ratio=target_test_ratio,
             target_validation_ratio=target_validation_ratio,
             min_train_samples=min_train_samples,
@@ -408,6 +409,7 @@ def train_global_model(
         train_df, test_df = adaptive_train_test_split(
             df=df,
             group_col=processed_names.LONG_PC_TYPE,
+            group_by_pc_types=group_by_pc_types,
             target_test_ratio=target_test_ratio,
             min_train_samples=min_train_samples,
             min_test_samples=min_test_samples,
@@ -592,6 +594,7 @@ def train_global_model(
             model_type=model_type,
             horizon=horizon,
             use_validation_set=use_validation_set,
+            group_by_pc_types=group_by_pc_types,
             weighting_method=weighting_method,
             X_train=X_train,
             y_train=y_train,

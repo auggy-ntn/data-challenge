@@ -75,6 +75,7 @@ def load_and_prepare_data(
 def adaptive_train_validation_test_split(
     df: pd.DataFrame,
     group_col: str = processed_names.LONG_PC_TYPE,
+    group_by_pc_types: bool = False,
     target_test_ratio: float = 0.1,
     target_validation_ratio: float = 0.1,
     min_train_samples: int = 20,
@@ -89,6 +90,7 @@ def adaptive_train_validation_test_split(
     Args:
         df: Long format dataframe with 'date' column
         group_col: Column defining groups
+        group_by_pc_types: Whether PC prices are grouped by type
         target_test_ratio: Desired test set size (default 0.1 = 10% of total data)
         target_validation_ratio: Desired validation set size (default 0.1 = 10%
                                  of total data)
@@ -105,7 +107,14 @@ def adaptive_train_validation_test_split(
     dates = sorted(df[processed_names.LONG_DATE].unique())
 
     # Target PC types to check
-    target_pc_types = [cst.REGULAR_PC_TYPE, cst.GREEN_PC_TYPE]
+    if group_by_pc_types:
+        target_pc_types = [
+            pc_type
+            for pc_type in df[group_col].unique()
+            if pc_type in cst.PCType._value2member_map_
+        ]
+    else:
+        target_pc_types = [cst.REGULAR_PC_TYPE, cst.GREEN_PC_TYPE]
 
     for validation_split_date in reversed(dates):
         possible_test_dates = [date for date in dates if date > validation_split_date]
@@ -200,6 +209,7 @@ def adaptive_train_validation_test_split(
 def adaptive_train_test_split(
     df: pd.DataFrame,
     group_col: str = processed_names.LONG_PC_TYPE,
+    group_by_pc_types: bool = False,
     target_test_ratio: float = 0.2,
     min_train_samples: int = 20,
     min_test_samples: int = 5,
@@ -212,6 +222,7 @@ def adaptive_train_test_split(
     Args:
         df: Long format dataframe with 'date' column
         group_col: Column defining groups
+        group_by_pc_types: Whether PC prices are grouped by type
         target_test_ratio: Desired test set size (default 0.2 = 20%)
         min_train_samples: Minimum training samples per group
         min_test_samples: Minimum test samples per group
@@ -224,16 +235,21 @@ def adaptive_train_test_split(
     # Find the latest date that satisfies constraints
     dates = sorted(df[processed_names.LONG_DATE].unique())
 
-    for split_date in reversed(dates):
-        train = df[df[processed_names.LONG_DATE] < split_date]
-        test = df[df[processed_names.LONG_DATE] >= split_date]
-        # Check if all groups meet minimum requirements
-        valid = True
+    # Target PC types to check
+    if group_by_pc_types:
         target_pc_types = [
             pc_type
             for pc_type in df[group_col].unique()
             if pc_type in cst.PCType._value2member_map_
         ]
+    else:
+        target_pc_types = [cst.REGULAR_PC_TYPE, cst.GREEN_PC_TYPE]
+
+    for split_date in reversed(dates):
+        train = df[df[processed_names.LONG_DATE] < split_date]
+        test = df[df[processed_names.LONG_DATE] >= split_date]
+        # Check if all groups meet minimum requirements
+        valid = True
         for target_pc in target_pc_types:
             train_count = (train[group_col] == target_pc).sum()
             test_count = (test[group_col] == target_pc).sum()
