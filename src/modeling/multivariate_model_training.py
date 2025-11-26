@@ -389,7 +389,7 @@ def train_global_model(
         shap_max_display (int): Maximum number of features to display in SHAP plots.
     """
     # 1. Load and prepare data (categorical features are label encoded)
-    df, target_col, feature_cols = load_and_prepare_data(
+    df, target_col, feature_cols, encoding_mappings = load_and_prepare_data(
         group_by_pc_types=group_by_pc_types, horizon=horizon
     )
 
@@ -609,4 +609,5 @@ def train_global_model(
             test_sample_weights=test_sample_weights,
             feature_cols=feature_cols,
             shap_max_display=shap_max_display,
+            encoding_mappings=encoding_mappings,
         )

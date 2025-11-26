@@ -1,5 +1,6 @@
 """Evaluation utilities for model performance assessment."""
 
+import json
 import os
 from typing import Literal
 
@@ -239,6 +240,7 @@ def multi_evaluate_and_log_model(
     test_sample_weights: pd.Series,
     feature_cols: list[str],
     shap_max_display: int,
+    encoding_mappings: dict,
 ):
     """Evaluate and log the performance of a trained model.
 
@@ -267,8 +269,16 @@ def multi_evaluate_and_log_model(
         test_sample_weights (pd.Series): Sample weights for testing data.
         feature_cols (list[str]): List of feature column names for SHAP analysis.
         shap_max_display (int): Maximum number of features to display in SHAP plots.
+        encoding_mappings (dict): Label encoding mappings for categorical features.
     """
     with mlflow.start_run(run_name=f"{mlflow_run_name}_eval"):
+        # Save encoding mappings as JSON
+        encoding_json_path = "encoding_mappings.json"
+        with open(encoding_json_path, "w") as f:
+            json.dump(encoding_mappings, f, indent=2)
+        mlflow.log_artifact(encoding_json_path)
+        os.remove(encoding_json_path)  # Clean up after logging
+
         mlflow.set_tags(
             {
                 cst.MLFLOW_MODEL_PHILOSOPHY: "multivariate",

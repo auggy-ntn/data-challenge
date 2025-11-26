@@ -15,7 +15,7 @@ from src.utils.logger import logger
 def load_and_prepare_data(
     group_by_pc_types: bool,
     horizon: int = 3,
-) -> tuple[pd.DataFrame, str, list[str]]:
+) -> tuple[pd.DataFrame, str, list[str], dict]:
     """Load processed data and separate features and target variable.
 
     Categorical features (region, pc_type) are always label encoded for compatibility
@@ -26,8 +26,8 @@ def load_and_prepare_data(
         horizon (int, optional): Forecast horizon in months. Defaults to 3.
 
     Returns:
-        tuple[pd.DataFrame, str, list[str]]: DataFrame, target column name,
-        feature column names (including encoded categoricals).
+        tuple[pd.DataFrame, str, list[str], dict]: DataFrame, target column name,
+        feature column names (including encoded categoricals), and encoding mappings.
     """
     # Load processed data
     if group_by_pc_types:
@@ -53,11 +53,25 @@ def load_and_prepare_data(
     ]
 
     # Label encode categorical features (works for all tree-based models)
-    logger.info("Label encoding categorical features: region, pc_type")
+    logger.info(f"Label encoding categorical features: {', '.join(categorical_cols)}")
+    encoding_mappings = {}
+
     for col in categorical_cols:
         encoded_col = f"{col}_encoded"
-        df[encoded_col] = LabelEncoder().fit_transform(df[col])
-        logger.info(f"  {col} -> {encoded_col} ({df[col].nunique()} unique values)")
+        le = LabelEncoder()
+        df[encoded_col] = le.fit_transform(df[col])
+
+        # Create mapping dictionary
+        mapping = {
+            str(k): int(v)
+            for k, v in zip(le.classes_, le.transform(le.classes_), strict=True)
+        }
+        encoding_mappings[col] = mapping
+
+        # Log the mapping
+        logger.info(f"  {col} -> {encoded_col}:")
+        for original, encoded in mapping.items():
+            logger.info(f"    {original} = {encoded}")
 
     # Combine encoded categoricals with base features
     feature_cols = [
@@ -68,7 +82,7 @@ def load_and_prepare_data(
     logger.info(f"Data loaded with {df.shape[0]} rows and {df.shape[1]} columns.")
     logger.info(f"Target: {target_col}. Features: {len(feature_cols)} columns.")
 
-    return df, target_col, feature_cols
+    return df, target_col, feature_cols, encoding_mappings
 
 
 # Use for dataset not grouped by PC types (more data points per group)
