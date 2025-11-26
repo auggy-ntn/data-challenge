@@ -4,6 +4,7 @@ from typing import Literal
 
 import numpy as np
 import pandas as pd
+from sklearn.preprocessing import LabelEncoder
 
 from constants import processed_names
 import constants.constants as cst
@@ -12,9 +13,13 @@ from src.utils.logger import logger
 
 
 def load_and_prepare_data(
-    group_by_pc_types: bool, horizon: int = 3
+    group_by_pc_types: bool,
+    horizon: int = 3,
 ) -> tuple[pd.DataFrame, str, list[str]]:
     """Load processed data and separate features and target variable.
+
+    Categorical features (region, pc_type) are always label encoded for compatibility
+    with numpy arrays used in model training.
 
     Args:
         group_by_pc_types (bool): Whether PC prices are grouped by type.
@@ -22,7 +27,7 @@ def load_and_prepare_data(
 
     Returns:
         tuple[pd.DataFrame, str, list[str]]: DataFrame, target column name,
-        feature column names.
+        feature column names (including encoded categoricals).
     """
     # Load processed data
     if group_by_pc_types:
@@ -37,7 +42,29 @@ def load_and_prepare_data(
         processed_names.LONG_REGION,
         processed_names.LONG_PC_TYPE,
     ]
-    feature_cols = [col for col in df.columns if col not in meta_cols + [target_col]]
+    categorical_cols = [
+        processed_names.LONG_REGION,
+        processed_names.LONG_PC_TYPE,
+    ]
+
+    # Get base numerical features (exclude meta and target)
+    base_feature_cols = [
+        col for col in df.columns if col not in meta_cols + [target_col]
+    ]
+
+    # Label encode categorical features (works for all tree-based models)
+    logger.info("Label encoding categorical features: region, pc_type")
+    for col in categorical_cols:
+        encoded_col = f"{col}_encoded"
+        df[encoded_col] = LabelEncoder().fit_transform(df[col])
+        logger.info(f"  {col} -> {encoded_col} ({df[col].nunique()} unique values)")
+
+    # Combine encoded categoricals with base features
+    feature_cols = [
+        f"{processed_names.LONG_REGION}_encoded",
+        f"{processed_names.LONG_PC_TYPE}_encoded",
+    ] + base_feature_cols
+
     logger.info(f"Data loaded with {df.shape[0]} rows and {df.shape[1]} columns.")
     logger.info(f"Target: {target_col}. Features: {len(feature_cols)} columns.")
 
