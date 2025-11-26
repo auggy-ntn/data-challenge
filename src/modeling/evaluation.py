@@ -1,5 +1,6 @@
 """Evaluation utilities for model performance assessment."""
 
+import os
 from typing import Literal
 
 import matplotlib.pyplot as plt
@@ -95,10 +96,8 @@ def analyze_model_with_shap(
     if model_type in ["xgboost", "lightgbm", "catboost", "random_forest"]:
         # TreeExplainer works for all tree-based models (fast)
         explainer = shap.TreeExplainer(model)
-        logger.info("Using TreeExplainer (optimized for tree-based models)")
     else:
         # Fallback to KernelExplainer (slower but works for any model)
-        logger.info("Using KernelExplainer (slower, generic approach)")
         explainer = shap.KernelExplainer(
             model.predict,
             shap.sample(X_train, 100),  # Use sample for speed
@@ -117,7 +116,7 @@ def analyze_model_with_shap(
     logger.info(f"Top 5 features: {importance_df['feature'].head(5).tolist()}")
 
     # Generate SHAP summary plot (beeswarm)
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(14, 10))
     shap.summary_plot(
         shap_values,
         X_test,
@@ -125,11 +124,14 @@ def analyze_model_with_shap(
         max_display=max_display,
         show=False,
     )
-    summary_plot = plt.gcf()
+    # Simplify x-axis label to prevent cutoff
+    plt.xlabel("mean(|SHAP value|)")
+    summary_plot_path = "shap_summary_plot.png"
+    plt.savefig(summary_plot_path, dpi=150, bbox_inches="tight")
     plt.close()
 
     # Generate SHAP bar plot (mean absolute values)
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(14, 10))
     shap.summary_plot(
         shap_values,
         X_test,
@@ -138,7 +140,10 @@ def analyze_model_with_shap(
         max_display=max_display,
         show=False,
     )
-    bar_plot = plt.gcf()
+    # Simplify x-axis label to prevent cutoff
+    plt.xlabel("mean(|SHAP value|)")
+    bar_plot_path = "shap_importance_bar.png"
+    plt.savefig(bar_plot_path, dpi=150, bbox_inches="tight")
     plt.close()
 
     logger.info("SHAP analysis completed")
@@ -146,8 +151,8 @@ def analyze_model_with_shap(
     return {
         "shap_values": shap_values,
         "feature_importance": importance_df,
-        "summary_plot": summary_plot,
-        "bar_plot": bar_plot,
+        "summary_plot_path": summary_plot_path,
+        "bar_plot_path": bar_plot_path,
     }
 
 
@@ -168,20 +173,50 @@ def log_model(
         signature (mlflow.models.signature.ModelSignature): Model signature for logging.
     """
     if model_type == "xgboost":
-        mlflow.xgboost.log_model(model, f"{model_role}_model", signature=signature)
+        mlflow.xgboost.log_model(
+            model,
+            name=f"{model_role}_model",
+            signature=signature,
+            pip_requirements=None,
+            conda_env=None,
+        )
     elif model_type == "lightgbm":
-        mlflow.lightgbm.log_model(model, f"{model_role}_model", signature=signature)
+        mlflow.lightgbm.log_model(
+            model,
+            name=f"{model_role}_model",
+            signature=signature,
+            pip_requirements=None,
+            conda_env=None,
+        )
     elif model_type == "random_forest":
-        mlflow.sklearn.log_model(model, f"{model_role}_model", signature=signature)
+        mlflow.sklearn.log_model(
+            model,
+            name=f"{model_role}_model",
+            signature=signature,
+            pip_requirements=None,
+            conda_env=None,
+        )
     elif model_type == "catboost":
-        mlflow.catboost.log_model(model, f"{model_role}_model", signature=signature)
+        mlflow.catboost.log_model(
+            model,
+            name=f"{model_role}_model",
+            signature=signature,
+            pip_requirements=None,
+            conda_env=None,
+        )
     elif model_type == "tft":
-        mlflow.pytorch.log_model(model, f"{model_role}_model", signature=signature)
+        mlflow.pytorch.log_model(
+            model,
+            name=f"{model_role}_model",
+            signature=signature,
+            pip_requirements=None,
+            conda_env=None,
+        )
     else:
         raise ValueError(f"Unsupported model type for logging: {model_type}")
 
 
-def evaluate_and_log_model(
+def multi_evaluate_and_log_model(
     eval_model,
     pred_model,
     best_params: dict,
@@ -281,14 +316,21 @@ def evaluate_and_log_model(
             max_display=shap_max_display,
         )
 
-        # Log SHAP plots to MLflow
-        mlflow.log_figure(shap_results["summary_plot"], "shap_summary_plot.png")
-        mlflow.log_figure(shap_results["bar_plot"], "shap_importance_bar.png")
+        # Log SHAP plots to MLflow as artifacts
+        mlflow.log_artifact(shap_results["summary_plot_path"])
+        mlflow.log_artifact(shap_results["bar_plot_path"])
+
+        # Clean up plot files after logging
+        os.remove(shap_results["summary_plot_path"])
+        os.remove(shap_results["bar_plot_path"])
 
         # Save feature importance CSV as artifact
         importance_path = "shap_feature_importance.csv"
         shap_results["feature_importance"].to_csv(importance_path, index=False)
         mlflow.log_artifact(importance_path)
+
+        # Clean up CSV file after logging
+        os.remove(importance_path)
 
         # Log model with signature
         signature = infer_signature(X_train, eval_model.predict(X_train))

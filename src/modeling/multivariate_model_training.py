@@ -13,8 +13,8 @@ from xgboost import XGBRegressor
 from constants import processed_names
 import constants.constants as cst
 from src.modeling.evaluation import (
-    evaluate_and_log_model,
     multi_compute_performance_metrics,
+    multi_evaluate_and_log_model,
 )
 from src.modeling.multivariate_data_prep import (
     adaptive_train_test_split,
@@ -582,7 +582,7 @@ def train_global_model(
 
     # 6. Evaluate and log model (for all model types)
     if model_type != "tft":  # Skip TFT as it's not implemented yet
-        evaluate_and_log_model(
+        multi_evaluate_and_log_model(
             eval_model=eval_model,
             pred_model=pred_model,
             best_params=best_params,
