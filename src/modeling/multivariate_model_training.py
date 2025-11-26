@@ -357,6 +357,7 @@ def optimize_random_forest_model(
 def train_global_model(
     group_by_pc_types: bool,
     horizon: int,
+    use_validation_set: bool,
     target_test_ratio: float,
     target_validation_ratio: float,
     min_train_samples: int,
@@ -374,6 +375,7 @@ def train_global_model(
     Args:
         group_by_pc_types (bool): Whether PC prices are grouped by type.
         horizon (int): Forecast horizon in months.
+        use_validation_set (bool): Whether to use a validation set.
         target_test_ratio (float): Desired test set size.
         target_validation_ratio (float): Desired validation set size.
         min_train_samples (int): Minimum training samples per group.
@@ -392,15 +394,7 @@ def train_global_model(
     )
 
     # 2. Split data into training and testing sets
-    if group_by_pc_types:
-        train_df, test_df = adaptive_train_test_split(
-            df=df,
-            group_col=processed_names.LONG_PC_TYPE,
-            target_test_ratio=target_test_ratio,
-            min_train_samples=min_train_samples,
-            min_test_samples=min_test_samples,
-        )
-    else:
+    if use_validation_set:
         train_df, validation_df, test_df = adaptive_train_validation_test_split(
             df=df,
             group_col=processed_names.LONG_PC_TYPE,
@@ -410,20 +404,17 @@ def train_global_model(
             min_validation_samples=min_validation_samples,
             min_test_samples=min_test_samples,
         )
+    else:
+        train_df, test_df = adaptive_train_test_split(
+            df=df,
+            group_col=processed_names.LONG_PC_TYPE,
+            target_test_ratio=target_test_ratio,
+            min_train_samples=min_train_samples,
+            min_test_samples=min_test_samples,
+        )
 
     # 3. Prepare training and testing data
-    if group_by_pc_types:
-        X_train, y_train, X_test, y_test, train_df_aligned, test_df_aligned = (
-            prepare_training_data(
-                train_df=train_df,
-                validation_df=None,
-                test_df=test_df,
-                feature_cols=feature_cols,
-                target_col=target_col,
-                horizon=horizon,
-            )
-        )
-    else:
+    if use_validation_set:
         (
             X_train,
             y_train,
@@ -442,6 +433,17 @@ def train_global_model(
             target_col=target_col,
             horizon=horizon,
         )
+    else:
+        X_train, y_train, X_test, y_test, train_df_aligned, test_df_aligned = (
+            prepare_training_data(
+                train_df=train_df,
+                validation_df=None,
+                test_df=test_df,
+                feature_cols=feature_cols,
+                target_col=target_col,
+                horizon=horizon,
+            )
+        )
 
     # 4. Compute sample weights for train and test
     train_sample_weights = compute_sample_weights(
@@ -452,7 +454,7 @@ def train_global_model(
         method=weighting_method,
     )
 
-    if not group_by_pc_types:
+    if use_validation_set:
         validation_sample_weights = compute_sample_weights(
             df=validation_df_aligned,
             group_col=processed_names.LONG_PC_TYPE,
@@ -471,18 +473,7 @@ def train_global_model(
 
     # 5. Train model
     if model_type == "xgboost":
-        if group_by_pc_types:
-            best_params = optimize_xgboost_model(
-                X_train=X_train,
-                y_train=y_train,
-                X_test=X_test,
-                y_test=y_test,
-                weights=test_sample_weights,
-                hyperparameter_grid=hyperparameter_grid,
-                pc_types=test_df_aligned[processed_names.LONG_PC_TYPE],
-                n_trials=n_trials,
-            )
-        else:
+        if use_validation_set:
             best_params = optimize_xgboost_model(
                 X_train=X_train,
                 y_train=y_train,
@@ -491,24 +482,24 @@ def train_global_model(
                 weights=validation_sample_weights,
                 hyperparameter_grid=hyperparameter_grid,
                 pc_types=validation_df_aligned[processed_names.LONG_PC_TYPE],
+                n_trials=n_trials,
+            )
+        else:
+            best_params = optimize_xgboost_model(
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+                weights=test_sample_weights,
+                hyperparameter_grid=hyperparameter_grid,
+                pc_types=test_df_aligned[processed_names.LONG_PC_TYPE],
                 n_trials=n_trials,
             )
         eval_model = XGBRegressor(**best_params)
         pred_model = XGBRegressor(**best_params)
 
     elif model_type == "lightgbm":
-        if group_by_pc_types:
-            best_params = optimize_lightgbm_model(
-                X_train=X_train,
-                y_train=y_train,
-                X_test=X_test,
-                y_test=y_test,
-                weights=test_sample_weights,
-                hyperparameter_grid=hyperparameter_grid,
-                pc_types=test_df_aligned[processed_names.LONG_PC_TYPE],
-                n_trials=n_trials,
-            )
-        else:
+        if use_validation_set:
             best_params = optimize_lightgbm_model(
                 X_train=X_train,
                 y_train=y_train,
@@ -517,24 +508,24 @@ def train_global_model(
                 weights=validation_sample_weights,
                 hyperparameter_grid=hyperparameter_grid,
                 pc_types=validation_df_aligned[processed_names.LONG_PC_TYPE],
+                n_trials=n_trials,
+            )
+        else:
+            best_params = optimize_lightgbm_model(
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+                weights=test_sample_weights,
+                hyperparameter_grid=hyperparameter_grid,
+                pc_types=test_df_aligned[processed_names.LONG_PC_TYPE],
                 n_trials=n_trials,
             )
         eval_model = LGBMRegressor(**best_params)
         pred_model = LGBMRegressor(**best_params)
 
     elif model_type == "catboost":
-        if group_by_pc_types:
-            best_params = optimize_catboost_model(
-                X_train=X_train,
-                y_train=y_train,
-                X_test=X_test,
-                y_test=y_test,
-                weights=test_sample_weights,
-                hyperparameter_grid=hyperparameter_grid,
-                pc_types=test_df_aligned[processed_names.LONG_PC_TYPE],
-                n_trials=n_trials,
-            )
-        else:
+        if use_validation_set:
             best_params = optimize_catboost_model(
                 X_train=X_train,
                 y_train=y_train,
@@ -543,24 +534,24 @@ def train_global_model(
                 weights=validation_sample_weights,
                 hyperparameter_grid=hyperparameter_grid,
                 pc_types=validation_df_aligned[processed_names.LONG_PC_TYPE],
+                n_trials=n_trials,
+            )
+        else:
+            best_params = optimize_catboost_model(
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+                weights=test_sample_weights,
+                hyperparameter_grid=hyperparameter_grid,
+                pc_types=test_df_aligned[processed_names.LONG_PC_TYPE],
                 n_trials=n_trials,
             )
         eval_model = CatBoostRegressor(**best_params)
         pred_model = CatBoostRegressor(**best_params)
 
     elif model_type == "random_forest":
-        if group_by_pc_types:
-            best_params = optimize_random_forest_model(
-                X_train=X_train,
-                y_train=y_train,
-                X_test=X_test,
-                y_test=y_test,
-                weights=test_sample_weights,
-                hyperparameter_grid=hyperparameter_grid,
-                pc_types=test_df_aligned[processed_names.LONG_PC_TYPE],
-                n_trials=n_trials,
-            )
-        else:
+        if use_validation_set:
             best_params = optimize_random_forest_model(
                 X_train=X_train,
                 y_train=y_train,
@@ -569,6 +560,17 @@ def train_global_model(
                 weights=validation_sample_weights,
                 hyperparameter_grid=hyperparameter_grid,
                 pc_types=validation_df_aligned[processed_names.LONG_PC_TYPE],
+                n_trials=n_trials,
+            )
+        else:
+            best_params = optimize_random_forest_model(
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+                weights=test_sample_weights,
+                hyperparameter_grid=hyperparameter_grid,
+                pc_types=test_df_aligned[processed_names.LONG_PC_TYPE],
                 n_trials=n_trials,
             )
         eval_model = RandomForestRegressor(**best_params)
@@ -589,18 +591,16 @@ def train_global_model(
             mlflow_run_name=mlflow_run_name,
             model_type=model_type,
             horizon=horizon,
-            group_by_pc_types=group_by_pc_types,
+            use_validation_set=use_validation_set,
             weighting_method=weighting_method,
             X_train=X_train,
             y_train=y_train,
-            X_validation=X_validation if not group_by_pc_types else None,
-            y_validation=y_validation if not group_by_pc_types else None,
+            X_validation=X_validation if use_validation_set else None,
+            y_validation=y_validation if use_validation_set else None,
             X_test=X_test,
             y_test=y_test,
             train_df_aligned=train_df_aligned,
-            validation_df_aligned=validation_df_aligned
-            if not group_by_pc_types
-            else None,
+            validation_df_aligned=validation_df_aligned if use_validation_set else None,
             test_df_aligned=test_df_aligned,
             train_sample_weights=train_sample_weights,
             test_sample_weights=test_sample_weights,

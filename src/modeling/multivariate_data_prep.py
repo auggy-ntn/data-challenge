@@ -83,7 +83,7 @@ def adaptive_train_validation_test_split(
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Adaptive temporal split that ensures minimum samples per group.
 
-    If standard 80/20 split results in insufficient test samples for any group,
+    If standard split results in insufficient test samples for any group,
     adjusts split date to ensure minimum requirements.
 
     Args:
@@ -206,7 +206,7 @@ def adaptive_train_test_split(
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Adaptive temporal split that ensures minimum samples per group.
 
-    If standard 80/20 split results in insufficient test samples for any group,
+    If standard split results in insufficient test samples for any group,
     adjusts split date to ensure minimum requirements.
 
     Args:

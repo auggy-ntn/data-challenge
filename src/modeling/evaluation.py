@@ -223,7 +223,7 @@ def multi_evaluate_and_log_model(
     mlflow_run_name: str,
     model_type: Literal["xgboost", "random_forest", "lightgbm", "catboost", "tft"],
     horizon: int,
-    group_by_pc_types: bool,
+    use_validation_set: bool,
     weighting_method: Literal["inverse_frequency", "sqrt_inverse", "balanced"],
     X_train: np.ndarray,
     y_train: np.ndarray,
@@ -249,7 +249,7 @@ def multi_evaluate_and_log_model(
         model_type (Literal["xgboost", "random_forest", "lightgbm", "tft"]): Type of the
             model.
         horizon (int): Forecast horizon in months.
-        group_by_pc_types (bool): Whether data is grouped by PC types.
+        use_validation_set (bool): Whether to use a validation set.
         weighting_method (Literal["inverse_frequency", "sqrt_inverse", "balanced"]):
             Method used for sample weighting.
         X_train (np.ndarray): Training feature matrix.
@@ -277,9 +277,7 @@ def multi_evaluate_and_log_model(
         )
         mlflow.log_params(best_params)
         # Train evaluation model with TRAIN weights
-        if group_by_pc_types:
-            eval_model.fit(X_train, y_train, sample_weight=train_sample_weights)
-        else:
+        if use_validation_set:
             # Combine TRAIN and VALIDATION for evaluating model on TEST set
             X_train = np.vstack([X_train, X_validation])
             y_train = np.concatenate([y_train, y_validation])
@@ -293,6 +291,8 @@ def multi_evaluate_and_log_model(
                 target_region=cst.EUROPE,
                 method=weighting_method,
             )
+            eval_model.fit(X_train, y_train, sample_weight=train_sample_weights)
+        else:
             eval_model.fit(X_train, y_train, sample_weight=train_sample_weights)
 
         # Evaluate model with TEST weights
