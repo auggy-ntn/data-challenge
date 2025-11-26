@@ -158,7 +158,7 @@ def build_univariate_dataset(
             target_cols=intermediate_names.EXOGENOUS_COLUMNS,
         )
 
-        return wide_df.sort_values(by=date_col).reset_index(drop=True)
+    return wide_df.sort_values(by=date_col).reset_index(drop=True)
 
 
 if __name__ == "__main__":

@@ -690,3 +690,42 @@ def multi_add_momentum_features(
     )
 
     return df
+
+
+########################### Feature selection ###########################
+
+
+def select_features(wide_df: pd.DataFrame, pc_type: cst.PCType) -> pd.DataFrame:
+    """Select relevant features for the univariate model for the selected PC type.
+
+    These features include:
+
+    Args:
+        wide_df (pd.DataFrame): The full wide format dataframe
+        pc_type (cst.PCType): The name of the PC type to select features for
+
+    Returns:
+        pd.DataFrame: A dataframe containing only the relevant features for the
+        specified PC type.
+    """
+    if not isinstance(pc_type, cst.PCType):
+        raise ValueError(
+            f"pc_type must be an instance of {cst.PCType} Enum, got {type(pc_type)}"
+        )
+    pc_type_columns = [col for col in wide_df.columns if pc_type.value in col]
+
+    exogenous_features = []
+    for exogenous_col in intermediate_names.EXOGENOUS_COLUMNS:
+        exogenous_features.extend(
+            [
+                col
+                for col in wide_df.columns
+                if (pc_type.name not in col and exogenous_col in col)
+            ]
+        )
+
+    relevant_features = (
+        pc_type_columns + exogenous_features + [processed_names.WIDE_DATE]
+    )
+
+    return wide_df[relevant_features]
