@@ -1,4 +1,6 @@
-# Data Challenge
+****# Polycarbonate Price Forecasting
+
+**XHEC Data Science Challenge: Multi-horizon PC price prediction for Schneider Electric**
 
 <!-- Build & CI Status -->
 ![CI](https://github.com/auggy-ntn/data-challenge/actions/workflows/ci.yaml/badge.svg?event=push)
@@ -13,224 +15,522 @@
 
 ---
 
-## 🚀 Quick Start for New Team Members
-
-**New to the project? Start here:**
-
-1. **[Complete Setup Guide](docs/SETUP.md)** - Step-by-step instructions to get everything running
-2. **[DVC Workflow](docs/DVC_WORKFLOW.md)** - How to work with data and pipelines
-3. **[MLflow Workflow](docs/MLFLOW_WORKFLOW.md)** - How to track experiments and models
-
-**TL;DR:**
-```bash
-# Clone and install
-git clone https://github.com/auggy-ntn/data-challenge.git
-cd data-challenge
-uv sync
-
-# Make sure the project venv is activated
-source .venv/bin/activate
-
-# Install pre-commit hooks
-pre-commit install
-
-# Get credentials from project owner, add to .env
-cp .env.example .env
-# Edit .env with provided credentials
-
-# Configure DVC remote
-source .env
-dvc remote modify --local b2remote access_key_id $AWS_ACCESS_KEY_ID
-dvc remote modify --local b2remote secret_access_key $AWS_SECRET_ACCESS_KEY
-
-# Pull data
-dvc pull
-
-# Start working!
-```
+> **📦 For Project Owners:** If you're taking ownership of this project and need to set up infrastructure for your team (DVC remote, MLflow tracking, credentials), see **[PROJECT_OWNER_CHECKLIST.md](docs/PROJECT_OWNER_CHECKLIST.md)** for a complete setup guide.
 
 ---
 
-## Project Structure
+## Table of Contents
+
+- [Quick Start - Using the Project](#-quick-start---using-the-project)
+- [Project Overview](#-project-overview)
+- [Project Structure](#-project-structure)
+- [Developer Setup](#-developer-setup)
+- [Data Pipeline](#-data-pipeline)
+- [Making Predictions](#-making-predictions)
+- [Handover Notes](#-handover-notes)
+
+---
+
+## 🚀 Quick Start - Using the Project
+
+**Want to run the pipeline and make predictions? Follow these steps:**
+
+### Prerequisites
+- Python 3.13+
+- [uv](https://github.com/astral-sh/uv) package manager (`pip install uv`)
+- Git
+
+### Installation
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/auggy-ntn/data-challenge.git
+cd data-challenge
+
+# 2. Install dependencies
+uv sync
+
+# 3. Activate virtual environment
+source .venv/bin/activate
+
+# 4. (Optional) Setup data versioning and experiment tracking
+# See "Handover Notes" section below if credentials are available
+```
+
+### Running the Data Pipeline
+
+The project uses a medallion architecture (Bronze → Silver → Gold) with DVC orchestration:
+
+```bash
+# Run the complete pipeline (Bronze → Silver → Gold)
+dvc repro
+
+# Or run stages individually:
+uv run python src/data_pipelines/raw_to_intermediate.py      # Bronze → Silver
+uv run python src/data_pipelines/multi_intermediate_to_processed.py  # Silver → Gold (multivariate)
+uv run python src/data_pipelines/uni_intermediate_to_processed.py    # Silver → Gold (univariate)
+```
+
+**Pipeline outputs:**
+- `data/intermediate/` - Cleaned time series data
+- `data/processed/` - Model-ready datasets:
+  - `multi_3m.csv`, `multi_6m.csv`, `multi_9m.csv` - Multivariate format
+  - `uni_3m.csv`, `uni_6m.csv`, `uni_9m.csv` - Univariate format
+- `data/se_predictions/` - Schneider Electric specific prediction templates
+
+### Making Predictions
+
+Open and run the prediction notebook:
+
+`notebooks/modeling/predictions.ipynb`
+
+---
+
+## 📊 Project Overview
+
+This project forecasts polycarbonate (PC) prices at 3, 6, and 9 month horizons to support Schneider Electric's procurement strategy and pricing decisions.
+
+### Key Features
+
+- **Multi-horizon forecasting**: 3, 6, and 9 month price predictions
+- **15 PC types**: 7 European variants, 8 Asian variants
+- **Multivariate approach**: Global models leveraging cross-series patterns
+- **Univariate approach**: Separate models per PC type for comparison
+- **Rich feature engineering**: 55-64 features including lags, rolling stats, cross-series features, exogenous variables
+- **Robust evaluation**: Global MAPE, weighted MAPE, per-PC-type MAPE
+
+### Technologies
+
+- **Data Pipeline**: DVC (Data Version Control) + Medallion architecture
+- **Experiment Tracking**: MLflow + Databricks
+- **Models**: XGBoost, ARIMA/SARIMA, CatBoost, LightGBM, RandomForest, Lasso
+- **Package Management**: uv
+- **Code Quality**: Ruff (formatter + linter) + pre-commit hooks
+
+---
+
+## 📁 Project Structure
 
 ```
 data-challenge/
 ├── .github/
-│   └── workflows/          # GitHub Actions CI/CD workflows
-├── config/                 # Configuration management
-│   ├── paths.py           # Centralized path definitions
-├── data/                   # Data directory (DVC-tracked, not in Git)
-│   ├── raw/               # Immutable raw data
-│   ├── intermediate/      # Cleaned, processed data
-│   └── processed/         # Feature-engineered, model-ready data
-├── docs/                   # Documentation
-│   ├── SETUP.md           # Complete setup guide for team
-│   ├── DVC_WORKFLOW.md    # Data versioning workflow
-│   └── MLFLOW_WORKFLOW.md # Experiment tracking workflow
-├── notebooks/              # Jupyter notebooks for analysis
-│   └── eda/               # Exploratory Data Analysis notebooks
+│
+├── constants/                  # Centralized configuration (paths, column names...)
+│
+├── data/                       # Data directory (DVC-tracked, .gitignored)
+│   ├── raw/                   # Bronze: Immutable raw data (Add, but NEVER modify)
+│   │   ├── pc_price/          # Target variable: Polycarbonate prices
+│   │   ├── phenol_acetone_capacity_loss/ # Raw material supply constraints
+│   │   ├── shutdown/          # Production outages (supply disruptions)
+│   │   ├── electricity_price/ # Energy costs (manufacturing input)
+│   │   ├── automobile_industry/ # Demand indicator (PC major consumer)
+│   │   ├── commodities/       # Commodity prices (broader market context)
+│   │   ├── example_product/   # Market intelligence: Competitor pricing
+│   │   ├── pitchbooks_company_financials/ # Supplier financial health
+│   │   ├── DEXCHUS.csv        # Exchange rate: CNY/USD
+│   │   ├── DEXINUS.csv        # Exchange rate: INR/USD
+│   │   └── DEXUSEU.csv        # Exchange rate: USD/EUR
+│   ├── intermediate/          # Silver: Cleaned, validated data
+│   ├── processed/             # Gold: Feature-engineered, model-ready
+│   └── se_predictions/        # Schneider Electric prediction templates
+│
+├── docs/                       # Documentation
+│
+├── notebooks/                  # Jupyter notebooks
+│
 ├── src/
-│   └── data_pipelines/    # Data transformation scripts (team populates this)
-├── dvc.yaml               # DVC pipeline definition
-├── pyproject.toml         # Project dependencies and configuration
-├── .pre-commit-config.yaml # Pre-commit hooks configuration
-├── .env.example           # Template for environment variables
-└── README.md              # This file
+│   ├── data_pipelines/        # ETL pipelines (Bronze → Silver → Gold)
+│   ├── modeling/              # Model training utilities
+│   └── utils/                 # Shared utilities
+│
+├── dvc.yaml                    # DVC pipeline definition
+├── dvc.lock                    # DVC pipeline lock file
+├── pyproject.toml              # Python dependencies and tool configuration
+├── .pre-commit-config.yaml     # Pre-commit hooks (ruff, nbstripout)
+├── .env.example                # Environment variable template
+├── .gitignore                  # Git ignore patterns
+└── README.md                   # This file
 ```
 
-## Technologies
+### Data Requirements
 
-- **Data Version Control**: DVC + Backblaze B2
-- **Experiment Tracking**: MLflow + Databricks
-- **Package Management**: uv
-- **Code Quality**: Ruff + pre-commit
-- **Notebooks**: Jupyter
+**⚠️ Important:** To run the data pipeline, you must have the exact same files and file structure in the `data/raw/` directory as described above.
 
-## For Team Members
+#### Data Sources
 
-### Getting Started
+**Most data was provided by Schneider Electric**, including:
+- All PC prices (`pc_price/`)
+- Phenol/acetone capacity loss data (`phenol_acetone_capacity_loss/`)
+- Shutdown data (`shutdown/`)
+- Electricity prices (`electricity_price/`)
+- Example product pricing (`example_product/`)
+- Supplier financials (`pitchbooks_company_financials/`)
 
-Follow the **[Complete Setup Guide](docs/SETUP.md)** for detailed instructions.
+**The following datasets were obtained from external public sources:**
 
-You'll need:
-- ✅ Backblaze B2 credentials (provided by project owner)
-- ✅ Databricks account (free) + workspace invitation
-- ✅ Python 3.13+
-- ✅ uv package manager
+| File | Source |
+|------|--------|
+| `data/raw/DEXCHUS.csv` | [Federal Reserve Economic Data - CNY/USD Exchange Rate](https://fred.stlouisfed.org/series/DEXCHUS) |
+| `data/raw/DEXINUS.csv` | [Federal Reserve Economic Data - INR/USD Exchange Rate](https://fred.stlouisfed.org/series/DEXINUS) |
+| `data/raw/DEXUSEU.csv` | [Federal Reserve Economic Data - USD/EUR Exchange Rate](https://fred.stlouisfed.org/series/DEXUSEU) |
+| `data/raw/automobile_industry/ECB Data Portal_20251123141544.csv` | [European Central Bank - Car Registrations Data](https://data.ecb.europa.eu/data/datasets/CAR/CAR.M.I9.Y.CREG.PC0000.4F0.N.PN) |
+| `data/raw/commodities/Commodity Market Watch Global Tables (Excel) - November 2025_CAP Tool 2.xlsx` | Contact project owners for source information |
 
-### Daily Workflow
+**Note:** The `automobile_industry/` directory may also contain legacy files (`road_eqr_zev$defaultview_spreadsheet.xlsx`) that are not actively used in the current pipeline.
 
-**Working with Data:**
-```bash
-# Pull latest data
-dvc pull
+### Key Components Explained
 
-# Create/modify datasets
-python src/data_pipelines/your_script.py
+#### Data Pipelines (`src/data_pipelines/`)
+- **`raw_to_intermediate.py`**: Processes all raw data sources into clean time series
+- **`multi_intermediate_to_processed.py`**: Creates multivariate datasets (long format, global models)
+- **`uni_intermediate_to_processed.py`**: Creates univariate datasets (wide format, separate models)
 
-# Track with DVC
-dvc add data/processed/new_dataset.csv
-git add data/processed/new_dataset.csv.dvc
-git commit -m "Add new dataset"
-dvc push
-git push
-```
+#### Feature Engineering (`src/utils/feature_engineering.py`)
+- 14+ feature functions: lag features, rolling statistics, cross-series features
+- Horizon-specific lags (min lag ≥ horizon to prevent lookahead bias)
+- Cross-series features: regional averages, volatility, price deviations
+- PC characteristics: is_recycled, is_glass_filled, is_flame_retardant
 
-**Tracking Experiments:**
-```python
-from dotenv import load_dotenv
-load_dotenv()
-
-import mlflow
-mlflow.set_tracking_uri("databricks")
-
-with mlflow.start_run(run_name="my-experiment"):
-    mlflow.log_param("model", "random_forest")
-    mlflow.log_metric("accuracy", 0.95)
-    # Train model...
-    mlflow.sklearn.log_model(model, "model")
-```
-
-See detailed guides:
-- **[DVC Workflow Guide](docs/DVC_WORKFLOW.md)**
-- **[MLflow Workflow Guide](docs/MLFLOW_WORKFLOW.md)**
+#### Model Training (`src/modeling/`)
+- **Multivariate approach**: One global model per horizon, learns patterns across all PC types
+- **Univariate approach**: Separate model for each PC type × horizon combination
+- Optuna hyperparameter optimization
+- Sample weighting for imbalanced PC types
 
 ---
 
-## Development
+## 🛠 Developer Setup
 
-   Edit `.env` and add your Backblaze B2 credentials:
-   - Get Application Key from: Backblaze → App Keys → Create New Key
-   - Add `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
+### Prerequisites
 
-6. **Configure DVC remote**:
+- Python 3.13+
+- [uv](https://github.com/astral-sh/uv) package manager
+- Git
 
-   ```bash
-   source .env
-   dvc remote modify --local b2remote access_key_id $AWS_ACCESS_KEY_ID
-   dvc remote modify --local b2remote secret_access_key $AWS_SECRET_ACCESS_KEY
-   ```
-
-7. **Pull data from Backblaze B2**:
-
-   ```bash
-   dvc pull
-   ```
-
-   This will download all project data to your local machine.
-
-### Development Workflow
-
-#### Code Quality Tools
-
-This project uses the following tools (configured in `pyproject.toml`):
-
-- **Ruff**: Fast Python linter and formatter
-  - Formatting and linting
-  - Import sorting (isort)
-  - Docstring conventions (Google style)
-- **nbstripout**: Strips Jupyter notebook outputs before committing
-- **Pre-commit hooks**: Automated checks for code quality
-
-#### Running Code Formatting
+### Installation
 
 ```bash
-# Format code
+# 1. Clone and navigate to project
+git clone https://github.com/auggy-ntn/data-challenge.git
+cd data-challenge
+
+# 2. Install all dependencies (runtime + dev)
+uv sync
+
+# 3. Activate virtual environment
+source .venv/bin/activate
+
+# 4. Install pre-commit hooks
+pre-commit install
+```
+
+### Code Quality Tools
+
+All tools are configured in `pyproject.toml` and run automatically via pre-commit:
+
+```bash
+# Format code (88 char line length)
 uv run ruff format .
 
-# Check and fix linting issues
+# Lint and auto-fix issues
 uv run ruff check --fix .
 
-# Sort imports
-uv run ruff check --select I --fix .
+# Run all pre-commit hooks manually
+pre-commit run --all-files
 ```
+
+**Pre-commit hooks:**
+- `ruff format` - Code formatting
+- `ruff check` - Linting (includes import sorting, docstring style)
+- `nbstripout` - Strip Jupyter notebook outputs
+- `trailing-whitespace`, `end-of-file-fixer` - File hygiene
 
 ### Adding Dependencies
 
 ```bash
-# Add a runtime dependency
+# Add runtime dependency
 uv add package-name
 
-# Add a development dependency
+# Add development dependency (testing, linting, etc.)
 uv add --dev package-name
 
 # Sync environment after manual pyproject.toml edits
-uv sync --dev
+uv sync
 ```
 
-### Working with Data (DVC)
-
-This project uses **DVC (Data Version Control)** to manage datasets and pipelines.
-
-#### Pulling Data
+### Development Workflow
 
 ```bash
-# Get latest data from Backblaze B2
-dvc pull
-```
+# 1. Create a feature branch
+git checkout -b feature/your-feature-name
 
-#### Pushing Data
-
-```bash
-# After modifying datasets or running pipelines
-dvc push
-```
-
-#### Running Data Pipelines
-
-```bash
-# Run the entire data pipeline (Bronze → Silver → Gold)
+# 2. Make changes, run pipeline
 dvc repro
 
-# Check pipeline status
+# 3. Format and lint (happens automatically on commit)
+uv run ruff format .
+uv run ruff check --fix .
+
+# 4. Commit changes (pre-commit hooks run automatically)
+git add .
+git commit -m "Add feature: description"
+
+# 5. Push to remote
+git push origin feature/your-feature-name
+```
+---
+
+## 🔄 Data Pipeline
+
+### Architecture: Medallion Pattern
+
+**Bronze (Raw) → Silver (Intermediate) → Gold (Processed)**
+
+```
+Bronze: data/raw/              Immutable source data
+   ↓
+Silver: data/intermediate/     Cleaned, validated time series
+   ↓
+Gold: data/processed/          Feature-engineered, model-ready datasets
+```
+
+### Running the Pipeline
+
+#### Option 1: DVC Orchestration (Recommended)
+
+```bash
+# Run entire pipeline (automatically detects changes)
+dvc repro
+
+# Check what needs to run
 dvc status
 
-# View pipeline DAG
+# Visualize pipeline DAG
 dvc dag
 ```
 
-**Important**: Make sure you've configured your DVC remote credentials first (see Setup section above).
+#### Option 2: Manual Execution
 
-For more details, see:
-- [`docs/DVC_WORKFLOW.md`](docs/DVC_WORKFLOW.md) - Complete DVC workflow guide
-- [`docs/SETUP.md`](docs/SETUP.md) - Initial setup instructions
+```bash
+# Stage 1: Bronze → Silver
+uv run python src/data_pipelines/raw_to_intermediate.py
+
+# Stage 2a: Silver → Gold (Multivariate)
+uv run python src/data_pipelines/multi_intermediate_to_processed.py
+
+# Stage 2b: Silver → Gold (Univariate)
+uv run python src/data_pipelines/uni_intermediate_to_processed.py
+```
+
+### Data Pipeline Outputs
+
+**After `raw_to_intermediate.py`:**
+- `data/intermediate/pc_price/` - Cleaned PC prices (Europe/Asia, monthly frequency)
+- `data/intermediate/electricity_price/` - European wholesale electricity prices
+- `data/intermediate/automobile_industry/` - Vehicle registrations (demand proxy)
+- `data/intermediate/phenol_acetone_capacity_loss/` - BPA/phenol/acetone capacity losses
+- `data/intermediate/shutdown/` - Production shutdown data
+- `data/intermediate/commodities/` - Commodity prices
+
+**After `multi_intermediate_to_processed.py`:**
+- `data/processed/multi_3m.csv` - 3-month horizon (long format, ~55-64 features)
+- `data/processed/multi_6m.csv` - 6-month horizon
+- `data/processed/multi_9m.csv` - 9-month horizon
+
+**After `uni_intermediate_to_processed.py`:**
+- `data/processed/uni_3m.csv` - 3-month horizon (wide format, ~465 features)
+- `data/processed/uni_6m.csv` - 6-month horizon
+- `data/processed/uni_9m.csv` - 9-month horizon
+
+### Feature Engineering Strategy
+
+**Multivariate approach:**
+- Long format: PC types stacked (region, pc_type, date, target, features)
+- ~55-64 features: lags, rolling stats, cross-series features, exogenous variables
+- Global model learns patterns across all PC types
+- Better performance on rare PC types (e.g., GF20: 30 observations)
+
+---
+
+## 🔮 Making Predictions
+
+### Using Pre-trained Models
+
+Open the predictions notebook:
+
+
+`notebooks/modeling/predictions.ipynb`
+
+
+The notebook will:
+1. Load trained models from MLflow (if available) or local checkpoints
+2. Load processed datasets (`data/processed/multi_*.csv`)
+3. Generate predictions for all 15 PC types × 3 horizons
+
+
+
+### Training New Models
+
+#### XGBoost (Baseline)
+
+Open global models notebook:
+`notebooks/modeling/global_models.ipynb`
+
+Expected workflow:
+1. Load processed data (`multi_3m.csv`, `multi_6m.csv`, `multi_9m.csv`)
+2. Train XGBoost with Optuna hyperparameter optimization
+3. Evaluate: global MAPE, weighted MAPE, per-PC-type MAPE
+4. Log to MLflow (if credentials available)
+
+#### ARIMA/SARIMA (Classical Baselines)
+
+Open ARIMA/SARIMA notebook:
+`notebooks/modeling/arima_sarima.ipynb`
+
+Useful for:
+- Univariate baselines
+- Specific PC types with strong seasonality
+- Ensemble model components
+---
+
+## 📦 Handover Notes
+
+**This project is being transferred to new ownership. Please note:**
+
+### Remote Infrastructure (Not Included)
+
+The original project used remote services that **will not be accessible** to new owners:
+
+#### 1. DVC Remote Storage (Backblaze B2)
+- **Original setup**: Data versioning backed by Backblaze B2 cloud storage
+- **Impact**: You won't be able to `dvc pull` from the original remote
+- **Solution**: Set up your own DVC remote storage
+
+**Options for new DVC remote:**
+```bash
+# Option A: Local remote (simplest, for single-machine use)
+dvc remote add -d myremote /path/to/storage/folder
+
+# Option B: AWS S3
+dvc remote add -d myremote s3://my-bucket/dvc-storage
+dvc remote modify myremote access_key_id YOUR_KEY
+dvc remote modify myremote secret_access_key YOUR_SECRET
+
+# Option C: Backblaze B2 (original approach)
+dvc remote add -d myremote s3://my-bucket/dvc-storage
+dvc remote modify myremote endpointurl https://s3.us-west-002.backblazeb2.com
+dvc remote modify myremote access_key_id YOUR_KEY
+dvc remote modify myremote secret_access_key YOUR_SECRET
+```
+
+**After setting up your remote:**
+```bash
+# Track data with DVC
+dvc add data/processed/my_data.csv
+git add data/processed/my_data.csv.dvc .gitignore
+git commit -m "Track data with DVC"
+
+# Push to your remote
+dvc push
+```
+
+#### 2. MLflow Tracking (Databricks)
+- **Original setup**: Experiment tracking on Databricks Community Edition
+- **Impact**: You won't be able to view original experiment logs or load logged models
+- **Solution**: Set up your own MLflow tracking server
+
+**Options for new MLflow backend:**
+
+```python
+# Option A: Local file-based (simplest, single-machine)
+import mlflow
+mlflow.set_tracking_uri("file:///path/to/mlruns")
+
+# Option B: MLflow Tracking Server (shared team use)
+# Start server: mlflow server --host 0.0.0.0 --port 5000
+mlflow.set_tracking_uri("http://your-server:5000")
+
+# Option C: Databricks (original approach, requires account)
+# 1. Create free account: https://www.databricks.com/try-databricks
+# 2. Generate access token: Settings → Developer → Access Tokens
+# 3. Set environment variables in .env:
+#    DATABRICKS_HOST=https://your-workspace.cloud.databricks.com
+#    DATABRICKS_TOKEN=your_token
+#    MLFLOW_EXPERIMENT_ID=/Users/your.email@domain.com/pc-forecasting
+mlflow.set_tracking_uri("databricks")
+```
+
+**Update `.env` with your chosen backend:**
+```bash
+# Copy template
+cp .env.example .env
+```
+Edit `.env` with your credentials
+
+### What IS Included (Fully Functional)
+
+✅ **Complete codebase**
+- All data pipeline scripts (`src/data_pipelines/`)
+- All utilities (`src/utils/`, `src/modeling/`)
+- All notebooks (`notebooks/`)
+- Configuration (`constants/`)
+
+
+✅ **DVC pipeline definitions**
+- `dvc.yaml` - Complete pipeline specification
+- `dvc.lock` - Reproducible pipeline state
+- Just need to configure your own remote storage
+
+✅ **Documentation**
+- `docs/PROJECT_OWNER_CHECKLIST.md` - Setup guide for new project owners
+- `docs/SETUP.md` - Complete setup guide
+- `docs/DVC_WORKFLOW.md` - Data versioning workflow
+- `docs/MLFLOW_WORKFLOW.md` - Experiment tracking workflow
+
+✅ **Development tools**
+- Pre-commit hooks configured
+- CI/CD pipeline (GitHub Actions)
+- Code quality tools (Ruff)
+
+### Getting Started Without Remote Services
+
+You can **fully use this project** without any remote services (you just need to have the raw data in `data/raw/`, organized as described in the [project structure](#-project-structure), and set up an mlflow tracking URI if you want to log new experiments):
+
+```bash
+# 1. Clone and install
+git clone https://github.com/auggy-ntn/data-challenge.git
+cd data-challenge
+uv sync
+source .venv/bin/activate
+
+# 2. Run pipeline (no DVC remote needed, all data in data/raw/)
+uv run python src/data_pipelines/raw_to_intermediate.py
+uv run python src/data_pipelines/multi_intermediate_to_processed.py
+uv run python src/data_pipelines/uni_intermediate_to_processed.py
+
+# 3. Train models (need MLflow tracking URI set in .env)
+jupyter notebook notebooks/modeling/global_models.ipynb
+
+# 4. Make predictions (need MLflow tracking URI set in .env)
+jupyter notebook notebooks/modeling/predictions.ipynb
+```
+---
+
+## 📚 Additional Documentation
+
+- **[PROJECT_OWNER_CHECKLIST.md](docs/PROJECT_OWNER_CHECKLIST.md)** - Setup guide for new project owners
+- **[SETUP.md](docs/SETUP.md)** - Complete developer setup guide (original project)
+- **[DVC_WORKFLOW.md](docs/DVC_WORKFLOW.md)** - Data versioning and pipeline workflow
+- **[MLFLOW_WORKFLOW.md](docs/MLFLOW_WORKFLOW.md)** - Experiment tracking workflow
+
+---
+
+
+## 👥 Authors
+
+**XHEC Data Science Challenge Team**
+- Aymeric de Longevialle
+- Paul Filisetti
+- Augustin Naton
+- Louis Péretié
+---
