@@ -1,5 +1,3 @@
-****# Polycarbonate Price Forecasting
-
 **XHEC Data Science Challenge: Multi-horizon PC price prediction for Schneider Electric**
 
 <!-- Build & CI Status -->
