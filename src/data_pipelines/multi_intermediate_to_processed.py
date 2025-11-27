@@ -46,6 +46,7 @@ def build_multivariate_dataset(
             processed_names.LONG_DATE,
             processed_names.LONG_REGION,
             processed_names.LONG_PC_TYPE,
+            processed_names.LONG_PC_PRICE,
         ]
     ]
     # Save future predictions for later use
