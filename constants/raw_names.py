@@ -464,3 +464,10 @@ SHUTDOWN_COMMODITY = "Commodity"
 SHUTDOWN_OUTAGE_START_DATE = "Outage Start Date"
 SHUTDOWN_OUTAGE_END_DATE = "Outage End Date"
 SHUTDOWN_TOTAL_CAPACITY_LOSS = "Total Capacity Loss (kt)"
+
+########################## commodities ##########################
+
+# Commodities dataset columns (from Excel Europe sheet)
+COMMODITIES_DATE = "date"  # Will be converted from quarterly
+COMMODITIES_CRUDE_OIL_BRENT = "crude_oil_brent_eur_bbl"
+COMMODITIES_BENZENE = "benzene_eur_metric_ton"

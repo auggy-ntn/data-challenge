@@ -36,8 +36,14 @@ SHUTDOWN_PHENOL_CAPACITY_LOSS = "phenol_capacity_loss_kt"
 AI_DATE = "date"
 AI_NEW_PASSENGER_REG = "new_passenger_car_registration"
 
+########################## commodities ##########################
+
+# Commodities dataset
+COMMODITIES_DATE = "date"
+COMMODITIES_CRUDE_OIL_BRENT = "crude_oil_brent_eur_bbl"
+COMMODITIES_BENZENE = "benzene_eur_metric_ton"
+
 # Exogenous columns list
-# TODO: Complete when more exogenous variables are added
 EXOGENOUS_COLUMNS = [
     BPA_CAPACITY_LOSS,
     AI_NEW_PASSENGER_REG,
@@ -48,6 +54,8 @@ EXOGENOUS_COLUMNS = [
     ELECTRICITY_STD_PRICE_EUR_MWHE,
     SHUTDOWN_ACETONE_CAPACITY_LOSS,
     SHUTDOWN_PHENOL_CAPACITY_LOSS,
+    COMMODITIES_CRUDE_OIL_BRENT,
+    COMMODITIES_BENZENE,
 ]
 
 ########################## pc_price ##########################

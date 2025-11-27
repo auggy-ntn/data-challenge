@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 
 from constants import intermediate_names, processed_names
+from constants import paths as pth
 import constants.constants as cst
 from constants.paths import (
     INTERMEDIATE_AUTOMOBILE_INDUSTRY_DIR,
@@ -143,7 +144,21 @@ def create_wide_format(group_by_pc_types: bool) -> pd.DataFrame:
         validate="1:1",
     )
 
-    # TODO: Add other datasets features here (Commodities, etc.)
+    # Load commodities
+    commodities = pd.read_csv(
+        pth.INTERMEDIATE_COMMODITIES_DIR / "intermediate_commodities.csv"
+    )
+    commodities[intermediate_names.COMMODITIES_DATE] = pd.to_datetime(
+        commodities[intermediate_names.COMMODITIES_DATE], format=cst.DATE_FORMAT
+    )
+    wide_df = pd.merge(
+        wide_df,
+        commodities,
+        left_on=processed_names.WIDE_DATE,
+        right_on=intermediate_names.COMMODITIES_DATE,
+        how="left",
+        validate="1:1",
+    )
 
     return wide_df
 
@@ -341,7 +356,7 @@ def create_long_format(group_by_pc_types: bool) -> pd.DataFrame:
     Returns:
         pd.DataFrame: The long format dataset.
     """
-    ## PC prices
+    # PC prices
     if group_by_pc_types:
         eu_df = pd.read_csv(
             INTERMEDIATE_PC_PRICE_DIR / "intermediate_pc_price_eu_grouped.csv"
@@ -465,7 +480,21 @@ def create_long_format(group_by_pc_types: bool) -> pd.DataFrame:
         validate="m:1",
     )
 
-    # TODO: Add other datasets features here (Commodities, etc.)
+    # Load commodities
+    commodities = pd.read_csv(
+        pth.INTERMEDIATE_COMMODITIES_DIR / "intermediate_commodities.csv"
+    )
+    commodities[intermediate_names.COMMODITIES_DATE] = pd.to_datetime(
+        commodities[intermediate_names.COMMODITIES_DATE], format=cst.DATE_FORMAT
+    )
+    long_df = pd.merge(
+        long_df,
+        commodities,
+        left_on=processed_names.LONG_DATE,
+        right_on=intermediate_names.COMMODITIES_DATE,
+        how="left",
+        validate="m:1",
+    )
 
     return long_df
 
