@@ -13,6 +13,7 @@ from src.utils.data_preprocessing import (
     clean_column_names,
     convert_pc_asia_prices,
     extract_bpa_capacity_loss,
+    extract_commodities_from_excel,
 )
 from src.utils.logger import logger
 
@@ -631,6 +632,56 @@ def raw_to_intermediate_automobile_industry(auto_df: pd.DataFrame) -> None:
     intermediate_df.to_csv(output_path, index=False)
 
 
+def raw_to_intermediate_commodities() -> None:
+    """Transform raw commodities data to intermediate format.
+
+    Reads the Europe sheet from the commodities Excel file, extracts
+    Crude oil (Brent) and Benzene prices, and converts from quarterly
+    to monthly frequency by repeating values across the 3 months of
+    each quarter.
+    """
+    # Find the commodities Excel file
+    commodity_files = list(pth.RAW_COMMODITIES_DIR.glob("Commodity Market Watch*.xlsx"))
+    if not commodity_files:
+        raise FileNotFoundError(
+            f"No commodity Excel file found in {pth.RAW_COMMODITIES_DIR}"
+        )
+
+    commodity_file = commodity_files[0]
+    logger.info(f"Reading raw commodities dataset at {commodity_file}")
+
+    # Extract and convert commodities data
+    monthly_commodities = extract_commodities_from_excel(
+        str(commodity_file), sheet_name="Europe"
+    )
+
+    # Rename columns to match intermediate naming convention
+    monthly_commodities = monthly_commodities.rename(
+        columns={
+            raw_names.COMMODITIES_DATE: intermediate_names.COMMODITIES_DATE,
+            raw_names.COMMODITIES_CRUDE_OIL_BRENT: (
+                intermediate_names.COMMODITIES_CRUDE_OIL_BRENT
+            ),
+            raw_names.COMMODITIES_BENZENE: intermediate_names.COMMODITIES_BENZENE,
+        }
+    )
+
+    # Save intermediate dataframe to CSV
+    output_path = pth.INTERMEDIATE_COMMODITIES_DIR / "intermediate_commodities.csv"
+    logger.info(f"Saving intermediate commodities dataset at {output_path}")
+
+    # Create directory if it doesn't exist
+    pth.INTERMEDIATE_COMMODITIES_DIR.mkdir(parents=True, exist_ok=True)
+
+    monthly_commodities.to_csv(output_path, index=False)
+
+    logger.info(
+        f"Saved {len(monthly_commodities)} monthly observations "
+        f"({monthly_commodities[intermediate_names.COMMODITIES_DATE].min()} to "
+        f"{monthly_commodities[intermediate_names.COMMODITIES_DATE].max()})"
+    )
+
+
 def raw_to_intermediate(group_by_pc_types: bool) -> None:
     """Runs all raw to intermediate data pipelines.
 
@@ -770,6 +821,10 @@ def raw_to_intermediate(group_by_pc_types: bool) -> None:
 
     raw_to_intermediate_shutdown(raw_acetone_shutdown, raw_phenol_shutdown)
     logger.info("Completed processing raw to intermediate shutdown dataset")
+
+    # commodities dataset
+    raw_to_intermediate_commodities()
+    logger.info("Completed processing raw to intermediate commodities dataset")
 
 
 if __name__ == "__main__":

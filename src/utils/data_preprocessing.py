@@ -507,3 +507,107 @@ def aggregate_shutdowns_by_month(
     monthly_agg[intermediate_names.SHUTDOWN_CHEMICAL] = chemical_name
 
     return monthly_agg
+
+
+def extract_commodities_from_excel(
+    file_path: str, sheet_name: str = "Europe"
+) -> pd.DataFrame:
+    """Extract crude oil and benzene prices from quarterly commodities Excel.
+
+    Reads the Europe sheet from the commodities Excel file, extracts Crude oil
+    (Brent) and Benzene prices, and converts from quarterly to monthly frequency
+    by repeating each quarter's value for all 3 months in that quarter.
+
+    Args:
+        file_path (str): Path to the commodities Excel file.
+        sheet_name (str): Name of the sheet to read. Defaults to "Europe".
+
+    Returns:
+        pd.DataFrame: Monthly dataframe with columns:
+            - date: Monthly date (first day of each month)
+            - crude_oil_brent_eur_bbl: Crude oil Brent price in EUR/bbl
+            - benzene_eur_metric_ton: Benzene price in EUR/metric ton
+    """
+    import constants.raw_names as raw_names
+
+    logger.info(f"Reading commodities data from {file_path}, sheet: {sheet_name}")
+
+    # Read Excel file without header
+    df = pd.read_excel(file_path, sheet_name=sheet_name, header=None)
+
+    # Extract dates (row 8, starting from column 2)
+    # Crude oil Brent (row 14, starting from column 2)
+    # Benzene (row 25, starting from column 2)
+    dates_raw = df.iloc[8, 2:].to_list()
+    crude_oil_values = df.iloc[14, 2:].to_list()
+    benzene_values = df.iloc[25, 2:].to_list()
+
+    # Filter out NaN dates and create quarterly dataframe
+    quarterly_data = []
+    for date_str, crude_oil, benzene in zip(
+        dates_raw, crude_oil_values, benzene_values, strict=True
+    ):
+        if pd.notna(date_str):
+            quarterly_data.append(
+                {
+                    "quarter": str(date_str),
+                    raw_names.COMMODITIES_CRUDE_OIL_BRENT: crude_oil,
+                    raw_names.COMMODITIES_BENZENE: benzene,
+                }
+            )
+
+    quarterly_df = pd.DataFrame(quarterly_data)
+
+    logger.info(f"Extracted {len(quarterly_df)} quarters of data")
+
+    # Convert quarterly to monthly by repeating values
+    monthly_data = []
+    for _, row in quarterly_df.iterrows():
+        quarter_str = row["quarter"]
+
+        # Parse quarter string (e.g., "Q1 2018")
+        try:
+            quarter_part, year_part = quarter_str.split()
+            quarter_num = int(quarter_part.replace("Q", ""))
+            year = int(year_part)
+
+            # Calculate the 3 months for this quarter
+            # Q1: Jan, Feb, Mar (months 1, 2, 3)
+            # Q2: Apr, May, Jun (months 4, 5, 6)
+            # Q3: Jul, Aug, Sep (months 7, 8, 9)
+            # Q4: Oct, Nov, Dec (months 10, 11, 12)
+            start_month = (quarter_num - 1) * 3 + 1
+
+            for month_offset in range(3):
+                month = start_month + month_offset
+                date = pd.Timestamp(year=year, month=month, day=1)
+
+                monthly_data.append(
+                    {
+                        raw_names.COMMODITIES_DATE: date,
+                        raw_names.COMMODITIES_CRUDE_OIL_BRENT: row[
+                            raw_names.COMMODITIES_CRUDE_OIL_BRENT
+                        ],
+                        raw_names.COMMODITIES_BENZENE: row[
+                            raw_names.COMMODITIES_BENZENE
+                        ],
+                    }
+                )
+        except (ValueError, AttributeError) as e:
+            logger.warning(f"Could not parse quarter string '{quarter_str}': {e}")
+            continue
+
+    monthly_df = pd.DataFrame(monthly_data)
+
+    # Sort by date
+    monthly_df = monthly_df.sort_values(raw_names.COMMODITIES_DATE).reset_index(
+        drop=True
+    )
+
+    logger.info(
+        f"Converted to {len(monthly_df)} monthly observations "
+        f"({monthly_df[raw_names.COMMODITIES_DATE].min()} to "
+        f"{monthly_df[raw_names.COMMODITIES_DATE].max()})"
+    )
+
+    return monthly_df

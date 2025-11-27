@@ -21,6 +21,7 @@ stages:
       - data/raw/automobile_industry/ECB Data Portal_20251123141544.csv
       - data/raw/shutdown/Acetone.csv
       - data/raw/shutdown/Phenol.csv
+      - data/raw/commodities/Commodity Market Watch Global Tables (Excel) - November  2025_CAP Tool 2.xlsx
     outs:
       - data/intermediate/pc_price/intermediate_pc_price_eu.csv
       - data/intermediate/pc_price/intermediate_pc_price_asia.csv
@@ -30,6 +31,7 @@ stages:
       - data/intermediate/shutdown/intermediate_shutdown_capacity_loss.csv
       - data/intermediate/electricity_price/intermediate_european_wholesale_electricity_price.csv
       - data/intermediate/automobile_industry/intermediate_automobile_industry.csv
+      - data/intermediate/commodities/intermediate_commodities.csv
 
 
   # Stage 2: Convert intermediate data to processed format for univariate modeling
@@ -45,7 +47,7 @@ stages:
       - data/intermediate/electricity_price/intermediate_european_wholesale_electricity_price.csv
       - data/intermediate/automobile_industry/intermediate_automobile_industry.csv
       - data/intermediate/shutdown/intermediate_shutdown_capacity_loss.csv
-      # TODO: Add other intermediate data dependencies as needed
+      - data/intermediate/commodities/intermediate_commodities.csv
     outs:
       - data/processed/uni_3m.csv
       - data/processed/uni_6m.csv
@@ -66,7 +68,7 @@ stages:
       - data/intermediate/electricity_price/intermediate_european_wholesale_electricity_price.csv
       - data/intermediate/automobile_industry/intermediate_automobile_industry.csv
       - data/intermediate/shutdown/intermediate_shutdown_capacity_loss.csv
-      # TODO: Add other intermediate data dependencies as needed
+      - data/intermediate/commodities/intermediate_commodities.csv
     outs:
       - data/processed/multi_3m.csv
       - data/processed/multi_6m.csv
