@@ -665,7 +665,12 @@ def train_single_category_model(
             category=category,
             horizon=horizon,
         )
-        mlflow.sklearn.log_model(pipeline, artifact_path="model")
+        # Prepare input example for model signature inference
+        if len(X_test) > 0:
+            input_example = X_test.iloc[:1].copy()
+        else:
+            input_example = X_train.iloc[:1].copy()
+        mlflow.sklearn.log_model(pipeline, name="model", input_example=input_example)
 
     return CategoryModelResult(
         category=category,
