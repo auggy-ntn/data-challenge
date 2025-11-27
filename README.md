@@ -172,7 +172,7 @@ data-challenge/
 | `data/raw/DEXINUS.csv` | [Federal Reserve Economic Data - INR/USD Exchange Rate](https://fred.stlouisfed.org/series/DEXINUS) |
 | `data/raw/DEXUSEU.csv` | [Federal Reserve Economic Data - USD/EUR Exchange Rate](https://fred.stlouisfed.org/series/DEXUSEU) |
 | `data/raw/automobile_industry/ECB Data Portal_20251123141544.csv` | [European Central Bank - Car Registrations Data](https://data.ecb.europa.eu/data/datasets/CAR/CAR.M.I9.Y.CREG.PC0000.4F0.N.PN) |
-| `data/raw/commodities/Commodity Market Watch Global Tables (Excel) - November 2025_CAP Tool 2.xlsx` | Contact project owners for source information |
+
 
 **Note:** The `automobile_industry/` directory may also contain legacy files (`road_eqr_zev$defaultview_spreadsheet.xlsx`) that are not actively used in the current pipeline.
 

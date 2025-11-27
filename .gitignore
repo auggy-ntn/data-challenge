@@ -108,3 +108,6 @@ mlruns/
 # Owner specific files
 .claude
 CLAUDE.md
+
+# PDF presentations
+*.pdf

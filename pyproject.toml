@@ -15,6 +15,9 @@ version = "0.1.0"
 authors = [
     # Complete with your information
     { name = "Augustin Naton", email = "augustin.naton@gmail.com" },
+    { name = "Aymeric Falcon", email = "aymericdelongevialle@gmail.com" },
+    { name = "Paul Filisetti", email = "paul.filisetti@me.com" },
+    { name = "Paul Filisetti", email = "lperetie@gmail.com" }
 ]
 description = "XHEC Data Science and AI for Business Data Challenge Project"
 readme = "README.md"
