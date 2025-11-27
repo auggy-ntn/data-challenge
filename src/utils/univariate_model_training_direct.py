@@ -1,7 +1,8 @@
-"""Univariate PC-type modeling pipeline with Lasso feature selection.
+"""Univariate regular/green PC modeling pipeline with Lasso feature selection.
 
-This module implements per-PC-type forecasting models using a three-stage feature
-selection pipeline:
+This module implements forecasting models for aggregated "regular" and "green" PC
+categories, directly predicting the minimum price across all suppliers in each category.
+Uses the same three-stage feature selection pipeline as the per-PC-type models:
 1. Variance threshold filtering to remove low-variance features
 2. Stationarity filtering using Augmented Dickey-Fuller test
 3. L1-regularized Lasso regression for final feature selection
@@ -13,8 +14,8 @@ SHAP explainability artifacts.
 from __future__ import annotations
 
 import argparse
-from collections.abc import Sequence
 from dataclasses import dataclass
+from enum import Enum
 import json
 from pathlib import Path
 import tempfile
@@ -54,30 +55,27 @@ SHAP_BACKGROUND_LIMIT = 500
 SHAP_SAMPLE_LIMIT = 200
 LASSO_COEF_THRESHOLD = 1e-8
 
-PC_TARGET_COLUMN_MAP = {
-    cst.PCType.CRYSTAL: (
-        f"{cst.EU_PREFIX}{intermediate_names.PC_EU_PC_CRYSTAL_BEST_PRICE}"
+
+class PCCategory(str, Enum):
+    """PC price category (regular or green)."""
+
+    REGULAR = "regular"
+    GREEN = "green"
+
+
+TARGET_COLUMN_MAP = {
+    PCCategory.REGULAR: (
+        f"{cst.EU_PREFIX}{intermediate_names.PC_EU_REGULAR_BEST_PRICE}"
     ),
-    cst.PCType.WHITE: (
-        f"{cst.EU_PREFIX}{intermediate_names.PC_EU_PC_WHITE_BEST_PRICE}"
-    ),
-    cst.PCType.GF10: (f"{cst.EU_PREFIX}{intermediate_names.PC_EU_PC_GF10_BEST_PRICE}"),
-    cst.PCType.GF20: (f"{cst.EU_PREFIX}{intermediate_names.PC_EU_PC_GF20_BEST_PRICE}"),
-    cst.PCType.RECYCLED_GF10_WHITE: (
-        f"{cst.EU_PREFIX}{intermediate_names.PC_EU_PC_RECYCLED_GF10_WHITE_BEST_PRICE}"
-    ),
-    cst.PCType.RECYCLED_GF10_GREY: (
-        f"{cst.EU_PREFIX}{intermediate_names.PC_EU_PC_RECYCLED_GF10_GREY_BEST_PRICE}"
-    ),
-    cst.PCType.SI: (f"{cst.EU_PREFIX}{intermediate_names.PC_EU_PC_SI_BEST_PRICE}"),
+    PCCategory.GREEN: (f"{cst.EU_PREFIX}{intermediate_names.PC_EU_GREEN_BEST_PRICE}"),
 }
 
 
 @dataclass
-class PCModelResult:
-    """Container for per-PC model diagnostics."""
+class CategoryModelResult:
+    """Container for category model diagnostics."""
 
-    pc_type: cst.PCType
+    category: PCCategory
     horizon: int
     n_test_samples: int
     n_features_before: int
@@ -199,9 +197,9 @@ class StationarityFilter(BaseEstimator, TransformerMixin):
         raise TypeError("StationarityFilter expects a pandas DataFrame input.")
 
 
-def _dataset_path(horizon: int, grouped: bool) -> Path:
-    suffix = "_grouped" if grouped else ""
-    filename = f"uni_{horizon}m{suffix}.csv"
+def _dataset_path(horizon: int) -> Path:
+    """Get path to processed univariate dataset (non-grouped version)."""
+    filename = f"uni_{horizon}m.csv"
     return PROCESSED_DATA_DIR / filename
 
 
@@ -249,7 +247,7 @@ def log_shap_artifacts(
     pipeline: Pipeline,
     X_background: pd.DataFrame,
     X_sample: pd.DataFrame,
-    pc_type: cst.PCType,
+    category: PCCategory,
     horizon: int,
 ) -> None:
     """Compute SHAP explanations and log plots/CSVs to MLflow.
@@ -263,13 +261,13 @@ def log_shap_artifacts(
         pipeline: Fitted sklearn Pipeline containing the Lasso model.
         X_background: Background dataset for SHAP explainer (training data).
         X_sample: Sample dataset to explain (test data).
-        pc_type: PC type identifier for artifact naming.
+        category: PC category identifier for artifact naming.
         horizon: Forecast horizon for artifact naming.
     """
     if X_sample is None or X_sample.empty:
         logger.warning(
             "Skipping SHAP logging for %s (horizon=%d): no sample data.",
-            pc_type.value,
+            category.value,
             horizon,
         )
         return
@@ -278,7 +276,7 @@ def log_shap_artifacts(
     if not feature_names:
         logger.warning(
             "Skipping SHAP logging for %s (horizon=%d): no stationary features.",
-            pc_type.value,
+            category.value,
             horizon,
         )
         return
@@ -289,7 +287,7 @@ def log_shap_artifacts(
         logger.warning(
             "Skipping SHAP logging for %s (horizon=%d): insufficient samples "
             "(background=%d, sample=%d).",
-            pc_type.value,
+            category.value,
             horizon,
             background_limit,
             sample_limit,
@@ -312,7 +310,7 @@ def log_shap_artifacts(
     except Exception as exc:
         logger.warning(
             "Failed to compute SHAP values for %s (horizon=%d): %s",
-            pc_type.value,
+            category.value,
             horizon,
             exc,
         )
@@ -326,7 +324,7 @@ def log_shap_artifacts(
 
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir_path = Path(tmpdir)
-        shap_csv = tmpdir_path / f"{pc_type.value}_{horizon}m_shap_values.csv"
+        shap_csv = tmpdir_path / f"{category.value}_{horizon}m_shap_values.csv"
         pd.DataFrame(shap_array, columns=feature_names).to_csv(shap_csv, index=False)
         mlflow.log_artifact(shap_csv, artifact_path="shap")
 
@@ -339,7 +337,7 @@ def log_shap_artifacts(
             show=False,
         )
         plt.tight_layout()
-        summary_path = tmpdir_path / f"{pc_type.value}_{horizon}m_shap_summary.png"
+        summary_path = tmpdir_path / f"{category.value}_{horizon}m_shap_summary.png"
         plt.savefig(summary_path, dpi=200, bbox_inches="tight")
         plt.close()
         mlflow.log_artifact(summary_path, artifact_path="shap")
@@ -347,7 +345,6 @@ def log_shap_artifacts(
 
 def load_or_build_univariate_dataset(
     horizon: int,
-    group_by_pc_types: bool = True,
     include_exogenous: bool = True,
     include_differencing: bool = True,
 ) -> pd.DataFrame:
@@ -355,17 +352,17 @@ def load_or_build_univariate_dataset(
 
     Checks for cached processed dataset first. If not found, triggers the
     full feature engineering pipeline to build it from intermediate data.
+    Uses non-grouped dataset (regular/green categories instead of individual PC types).
 
     Args:
         horizon: Forecast horizon in months (affects dataset filename).
-        group_by_pc_types: Whether to use grouped dataset (best prices per type).
         include_exogenous: Whether to include exogenous features.
         include_differencing: Whether to include differenced features.
 
     Returns:
         Processed DataFrame sorted by date with date column converted to datetime.
     """
-    path = _dataset_path(horizon, grouped=group_by_pc_types)
+    path = _dataset_path(horizon)
     if path.exists():
         logger.info("Loading cached univariate dataset from %s", path)
         df = pd.read_csv(path)
@@ -374,7 +371,7 @@ def load_or_build_univariate_dataset(
         path.parent.mkdir(parents=True, exist_ok=True)
         df = build_univariate_dataset(
             horizon=horizon,
-            group_by_pc_types=group_by_pc_types,
+            group_by_pc_types=False,  # Use non-grouped version for regular/green
             include_exogenous=include_exogenous,
             include_differencing=include_differencing,
         )
@@ -461,10 +458,10 @@ def build_lasso_pipeline(
     variance_threshold: float,
     stationarity_alpha: float,
     n_splits: int,
-    random_state: int = 42,
-    max_iter: int = 10000,
-    n_alphas: int = 100,
-    tol: float = 1e-3,
+    random_state: int = DEFAULT_RANDOM_STATE,
+    max_iter: int = DEFAULT_MAX_ITER,
+    n_alphas: int = DEFAULT_N_ALPHAS,
+    tol: float = DEFAULT_TOL,
 ) -> Pipeline:
     """Create the end-to-end feature selection + Lasso pipeline.
 
@@ -520,9 +517,9 @@ def _compute_cv_splits(n_train_samples: int, desired_splits: int) -> int:
     return max_possible
 
 
-def train_single_pc_model(
+def train_single_category_model(
     df: pd.DataFrame,
-    pc_type: cst.PCType,
+    category: PCCategory,
     horizon: int,
     variance_threshold: float = DEFAULT_VARIANCE_THRESHOLD,
     stationarity_alpha: float = DEFAULT_STATIONARITY_ALPHA,
@@ -530,8 +527,8 @@ def train_single_pc_model(
     random_state: int = DEFAULT_RANDOM_STATE,
     desired_cv_splits: int = DEFAULT_CV_SPLITS,
     mlflow_run_name: str | None = None,
-) -> PCModelResult:
-    """Train a Lasso pipeline for a single PC type and horizon.
+) -> CategoryModelResult:
+    """Train a Lasso pipeline for a single PC category and horizon.
 
     Applies three-stage feature selection (variance threshold, stationarity filter,
     Lasso regularization) and logs model artifacts, metrics, and SHAP explanations
@@ -539,7 +536,7 @@ def train_single_pc_model(
 
     Args:
         df: Processed dataset with features and target column.
-        pc_type: PC type to train model for.
+        category: PC category to train model for (regular or green).
         horizon: Forecast horizon in months.
         variance_threshold: Minimum variance for feature filtering.
         stationarity_alpha: ADF test significance level.
@@ -549,25 +546,25 @@ def train_single_pc_model(
         mlflow_run_name: Optional custom name for MLflow run.
 
     Returns:
-        PCModelResult containing training diagnostics and selected features.
+        CategoryModelResult containing training diagnostics and selected features.
 
     Raises:
-        ValueError: If PC type is unsupported, target column missing, or
+        ValueError: If category is unsupported, target column missing, or
             insufficient samples available.
     """
-    if pc_type not in PC_TARGET_COLUMN_MAP:
-        raise ValueError(f"Unsupported pc_type: {pc_type}")
-    target_col = PC_TARGET_COLUMN_MAP[pc_type]
+    if category not in TARGET_COLUMN_MAP:
+        raise ValueError(f"Unsupported category: {category}")
+    target_col = TARGET_COLUMN_MAP[category]
     if target_col not in df.columns:
         raise ValueError(
             f"Column '{target_col}' not available in the dataset. "
-            "Rebuild processed data with group_by_pc_types=True."
+            "Rebuild processed data with group_by_pc_types=False."
         )
 
     X, y = make_supervised_matrix(df=df, target_col=target_col, horizon=horizon)
     if len(X) < MIN_SAMPLES_REQUIRED:
         raise ValueError(
-            f"Not enough samples ({len(X)}) for PC type {pc_type.value} "
+            f"Not enough samples ({len(X)}) for category {category.value} "
             f"horizon {horizon}. Minimum required: {MIN_SAMPLES_REQUIRED}."
         )
     n_features_before = X.shape[1]
@@ -582,16 +579,16 @@ def train_single_pc_model(
         random_state=random_state,
     )
 
-    run_name = mlflow_run_name or f"lasso_{pc_type.value}_{horizon}m"
+    run_name = mlflow_run_name or f"lasso_{category.value}_{horizon}m"
     nested = mlflow.active_run() is not None
     with mlflow.start_run(run_name=run_name, nested=nested):
         mlflow.set_tags(
             {
-                cst.MLFLOW_MODEL_PHILOSOPHY: "univariate",
+                cst.MLFLOW_MODEL_PHILOSOPHY: "univariate_direct",
                 cst.MLFLOW_MODEL_TYPE: "lasso",
                 cst.MLFLOW_HORIZON: horizon,
                 cst.MLFLOW_FUNCTION: "evaluation",
-                "pc_type": pc_type.value,
+                "pc_category": category.value,
             }
         )
         mlflow.log_params(
@@ -630,12 +627,11 @@ def train_single_pc_model(
                 "Model will predict constant (intercept only). "
                 "This may indicate over-regularization or weak signal. "
                 "Consider relaxing stationarity_alpha or checking data quality.",
-                pc_type.value,
+                category.value,
                 horizon,
                 selected_alpha,
                 lasso_model.intercept_,
             )
-            # Log additional diagnostics
             mlflow.log_param("zero_features_warning", True)
             mlflow.log_metric(
                 "n_stationary_features_when_zero", len(stationarity_features)
@@ -649,7 +645,7 @@ def train_single_pc_model(
         mlflow.log_metric("lasso_intercept", lasso_model.intercept_)
 
         feature_info = {
-            "pc_type": pc_type.value,
+            "category": category.value,
             "horizon": horizon,
             "target_column": target_col,
             "features_before": n_features_before,
@@ -660,19 +656,19 @@ def train_single_pc_model(
         }
         mlflow.log_text(
             json.dumps(feature_info, indent=2),
-            artifact_file=f"{pc_type.value}_feature_summary.json",
+            artifact_file=f"{category.value}_feature_summary.json",
         )
         log_shap_artifacts(
             pipeline=pipeline,
             X_background=X_train,
             X_sample=X_test,
-            pc_type=pc_type,
+            category=category,
             horizon=horizon,
         )
         mlflow.sklearn.log_model(pipeline, artifact_path="model")
 
-    return PCModelResult(
-        pc_type=pc_type,
+    return CategoryModelResult(
+        category=category,
         horizon=horizon,
         n_test_samples=len(X_test),
         n_features_before=n_features_before,
@@ -684,27 +680,25 @@ def train_single_pc_model(
     )
 
 
-def train_per_pc_models(
+def train_category_models(
     horizon: int,
-    pc_types: Sequence[cst.PCType] | None = None,
-    group_by_pc_types: bool = True,
+    categories: list[PCCategory] | None = None,
     variance_threshold: float = DEFAULT_VARIANCE_THRESHOLD,
     stationarity_alpha: float = DEFAULT_STATIONARITY_ALPHA,
     test_ratio: float = DEFAULT_TEST_RATIO,
     random_state: int = DEFAULT_RANDOM_STATE,
     desired_cv_splits: int = DEFAULT_CV_SPLITS,
     mlflow_experiment: str | None = None,
-) -> list[PCModelResult]:
-    """Train Lasso models for each requested PC type with MLflow logging.
+) -> list[CategoryModelResult]:
+    """Train Lasso models for regular and green PC categories with MLflow logging.
 
-    Trains individual models for each PC type and logs them as nested child runs
-    under a parent run. Aggregates metrics (global MAPE, weighted MAPE, regular
-    MAPE, green MAPE) in the parent run.
+    Trains individual models for each category and logs them as nested child runs
+    under a parent run. Aggregates metrics (global MAPE, weighted MAPE) in the
+    parent run.
 
     Args:
         horizon: Forecast horizon in months.
-        pc_types: List of PC types to train. If None, trains all available types.
-        group_by_pc_types: Whether to use grouped dataset (best prices per type).
+        categories: List of categories to train. If None, trains both regular and green.
         variance_threshold: Minimum variance for feature filtering.
         stationarity_alpha: ADF test significance level.
         test_ratio: Fraction of data reserved for testing.
@@ -713,39 +707,40 @@ def train_per_pc_models(
         mlflow_experiment: MLflow experiment name/path.
 
     Returns:
-        List of PCModelResult objects, one per successfully trained PC type.
+        List of CategoryModelResult objects, one per successfully trained category.
     """
     if mlflow_experiment:
         mlflow.set_experiment(mlflow_experiment)
     df = load_or_build_univariate_dataset(
         horizon=horizon,
-        group_by_pc_types=group_by_pc_types,
         include_exogenous=True,
         include_differencing=True,
     )
-    targets = pc_types or list(PC_TARGET_COLUMN_MAP.keys())
-    results: list[PCModelResult] = []
-    per_pc_mape: dict[cst.PCType, tuple[float, int]] = {}
+    targets = categories or list(PCCategory)
+    results: list[CategoryModelResult] = []
+    per_category_mape: dict[PCCategory, tuple[float, int]] = {}
     parent_nested = mlflow.active_run() is not None
-    with mlflow.start_run(run_name=f"lasso_{horizon}m_global", nested=parent_nested):
+    with mlflow.start_run(
+        run_name=f"lasso_direct_{horizon}m_global", nested=parent_nested
+    ):
         mlflow.set_tags(
             {
-                cst.MLFLOW_MODEL_PHILOSOPHY: "univariate",
+                cst.MLFLOW_MODEL_PHILOSOPHY: "univariate_direct",
                 cst.MLFLOW_MODEL_TYPE: "lasso",
                 cst.MLFLOW_HORIZON: horizon,
                 cst.MLFLOW_FUNCTION: "batch_training",
             }
         )
-        for pc_type in targets:
+        for category in targets:
             logger.info(
                 "Training %s model for horizon %s months",
-                pc_type.value,
+                category.value,
                 horizon,
             )
             try:
-                result = train_single_pc_model(
+                result = train_single_category_model(
                     df=df,
-                    pc_type=pc_type,
+                    category=category,
                     horizon=horizon,
                     variance_threshold=variance_threshold,
                     stationarity_alpha=stationarity_alpha,
@@ -755,77 +750,48 @@ def train_per_pc_models(
                 )
             except ValueError as exc:
                 if "Not enough samples" in str(exc):
-                    logger.warning("Skipping %s: %s", pc_type.value, exc)
+                    logger.warning("Skipping %s: %s", category.value, exc)
                     continue
                 raise
             results.append(result)
-            per_pc_mape[pc_type] = (result.test_mape, result.n_test_samples)
+            per_category_mape[category] = (result.test_mape, result.n_test_samples)
             logger.success(
-                "PC=%s | horizon=%s | test MAPE=%.3f | features=%d",
-                pc_type.value,
+                "Category=%s | horizon=%s | test MAPE=%.3f | features=%d",
+                category.value,
                 horizon,
                 result.test_mape,
                 result.n_lasso_features,
             )
-        if per_pc_mape:
-            mapes = np.array([value for value, _ in per_pc_mape.values()])
-            weights = np.array([weight for _, weight in per_pc_mape.values()])
+        if per_category_mape:
+            mapes = np.array([value for value, _ in per_category_mape.values()])
+            weights = np.array([weight for _, weight in per_category_mape.values()])
             overall_mape = float(np.mean(mapes))
             weighted_mape = float(np.average(mapes, weights=weights))
 
-            regular_types = {
-                cst.PCType.CRYSTAL,
-                cst.PCType.WHITE,
-                cst.PCType.GF10,
-                cst.PCType.GF20,
-                cst.PCType.SI,
-            }
-            green_types = {
-                cst.PCType.RECYCLED_GF10_WHITE,
-                cst.PCType.RECYCLED_GF10_GREY,
-            }
-
-            regular_mapes = [
-                per_pc_mape[pc][0] for pc in regular_types if pc in per_pc_mape
-            ]
-            green_mapes = [
-                per_pc_mape[pc][0] for pc in green_types if pc in per_pc_mape
-            ]
-
-            if regular_mapes:
-                mlflow.log_metric("regular_MAPE", float(np.mean(regular_mapes)))
-            if green_mapes:
-                mlflow.log_metric("green_MAPE", float(np.mean(green_mapes)))
-
             mlflow.log_metric(cst.GLOBAL_MAPE, overall_mape)
             mlflow.log_metric(cst.WEIGHTED_MAPE, weighted_mape)
+
+            # Log category-specific MAPEs
+            if PCCategory.REGULAR in per_category_mape:
+                mlflow.log_metric(
+                    "regular_MAPE", per_category_mape[PCCategory.REGULAR][0]
+                )
+            if PCCategory.GREEN in per_category_mape:
+                mlflow.log_metric("green_MAPE", per_category_mape[PCCategory.GREEN][0])
     return results
-
-
-def _parse_pc_types(pc_types_arg: str | None) -> list[cst.PCType] | None:
-    if not pc_types_arg:
-        return None
-    requested = []
-    for value in pc_types_arg.split(","):
-        value = value.strip().lower()
-        try:
-            requested.append(cst.PCType(value))
-        except ValueError as exc:
-            raise ValueError(f"Unknown PC type '{value}'.") from exc
-    return requested
 
 
 def main():
     """CLI entrypoint for ad-hoc training via `python -m` execution."""
     parser = argparse.ArgumentParser(
-        description="Train per-PC univariate Lasso models with feature selection."
+        description="Train univariate Lasso models for regular/green PC categories."
     )
     parser.add_argument("--horizon", type=int, required=True, help="Forecast horizon.")
     parser.add_argument(
-        "--pc-types",
+        "--categories",
         type=str,
         default=None,
-        help="Comma-separated PC types (values from constants.PCType).",
+        help="Comma-separated categories (regular,green). Default: both.",
     )
     parser.add_argument(
         "--variance-threshold",
@@ -857,18 +823,23 @@ def main():
         default=None,
         help="Optional MLflow experiment name.",
     )
-    parser.add_argument(
-        "--no-grouping",
-        action="store_true",
-        help="Use the base dataset (without PC-type grouping).",
-    )
     args = parser.parse_args()
 
-    pc_types = _parse_pc_types(args.pc_types)
-    train_per_pc_models(
+    categories = None
+    if args.categories:
+        categories = []
+        for value in args.categories.split(","):
+            value = value.strip().lower()
+            try:
+                categories.append(PCCategory(value))
+            except ValueError as exc:
+                raise ValueError(
+                    f"Unknown category '{value}'. Use 'regular' or 'green'."
+                ) from exc
+
+    train_category_models(
         horizon=args.horizon,
-        pc_types=pc_types,
-        group_by_pc_types=not args.no_grouping,
+        categories=categories,
         variance_threshold=args.variance_threshold,
         stationarity_alpha=args.stationarity_alpha,
         test_ratio=args.test_ratio,
